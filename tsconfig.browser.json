@@ -1,0 +1,25 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "outDir": "./public/js",
+    "declaration": false,
+    "sourceMap": false,
+    "noEmit": true,
+    "importHelpers": true,
+    "downlevelIteration": true,
+    "incremental": false,
+    "lib": [
+      "esnext",
+      "dom"
+    ]
+  },
+  "exclude": [
+    "node_modules",
+    "test",
+    "dist",
+    "**/*spec.ts",
+    "rollup.*.ts",
+    "src"
+  ]
+}

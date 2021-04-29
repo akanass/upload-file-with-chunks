@@ -1,0 +1,90 @@
+@use "@material/theme";
+@use "@material/button";
+
+html, body {
+  padding: 0;
+  margin: 0;
+  background-color: theme.$background;
+}
+
+.main{
+  height: 100vh;
+}
+
+.content-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.direction-column {
+  flex-direction: column;
+}
+
+.mdc-typography--caption {
+  color: theme.$grey-600;
+  padding: 5px 0;
+  text-align: justify;
+}
+
+.mdc-typography--headline6 {
+  color: theme.$grey-500;
+  padding: 10px 0;
+  text-align: justify;
+}
+
+.mdc-typography--body2 {
+  color: theme.$grey-700;
+  padding: 7px 0;
+  text-align: justify;
+}
+
+.mdc-card {
+  height: 90vh;
+  width: 50vw;
+  overflow: scroll;
+}
+
+.mdc-card__header {
+  line-height: 70px;
+  color: theme.$secondary;
+  background-color: theme.$primary;
+  text-align: center;
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+}
+
+.mdc-card__content {
+  padding: 15px 20px;
+}
+
+.mdc-card__content-title {
+  padding: 15px 0 30px 0;
+  color: theme.$primary;
+  text-align: center;
+}
+
+.error-message {
+  display: flex;
+  color: theme.$error;
+  align-items: center;
+  justify-content: center;
+  text-align: justify;
+  padding-bottom: 10px;
+}
+
+.error-message .message {
+  padding-left: 10px;
+}
+
+.mgt30 {
+  margin-top: 30px;
+}
+
+.mgt20 {
+  margin-top: 20px;
+}
+
+.mgt50 {
+  margin-top: 50px;
+}

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Upload File With Chunks</title>
+    <base href="/">
+    <meta name="viewport" content="minimum-scale=1,initial-scale=1,width=device-width,shrink-to-fit=no">
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+
+    <link rel="shortcut icon" href="/public/img/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/public/img/favicon.png" type="image/png">
+    <link rel="icon" sizes="32x32" href="/public/img/favicon-32.png" type="image/png">
+    <link rel="icon" sizes="64x64" href="/public/img/favicon-64.png" type="image/png">
+    <link rel="icon" sizes="96x96" href="/public/img/favicon-96.png" type="image/png">
+    <link rel="icon" sizes="196x196" href="/public/img/favicon-196.png" type="image/png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/public/img/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/public/img/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/public/img/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/public/img/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/public/img/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/public/img/apple-touch-icon-144x144.png">
+    <meta name="msapplication-TileImage" content="/public/img/favicon-144.png">
+    <meta name="msapplication-TileColor" content="#FFFFFF">
+
+    <link rel="stylesheet" href="/public/css/{{style}}" media="screen">
+</head>
+<body class="mdc-typography">
+<!--  app start -->
+<div id="main-content" class="main content-center">
+    <div class="mdc-card">
+        <div class="mdc-card__header mdc-typography--headline7">
+            Upload File With Chunks Has Never Been Easier
+        </div>
+        <div class="mdc-card__content">
+            <div class="mdc-card__content-title mdc-typography--headline4">
+                Choose the files to upload
+            </div>
+            {{{body}}}
+        </div>
+    </div>
+</div>
+<!--  app end -->
+
+<!-- Load ES Module script -->
+<script async defer type="module" src="/public/js/{{global}}"></script>
+<script async defer type="module" src="/public/js/{{upload}}"></script>
+</body>
+</html>

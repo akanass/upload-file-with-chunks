@@ -1,0 +1,44 @@
+server:
+  protocol: http
+  host: 0.0.0.0
+  port: 3000
+  options:
+    - name: logger
+      value: true
+
+views:
+  templatesPath: ../views
+  layout: _layout
+  includeViewExtension: true
+  engineOptions:
+    async: true
+    htmlMinifierOptions:
+      removeComments: true
+      removeCommentsFromCDATA: true
+      collapseWhitespace: true
+      collapseBooleanAttributes: true
+      removeEmptyAttributes: true
+      minifyCSS: true
+      minifyJS: true
+
+assets:
+  rootPath: ../public
+  options:
+    prefix: /public/
+    cacheControl: true
+    etag: true
+    acceptRanges: true
+    lastModified: true
+    maxAge: 86400000
+
+#pipes:
+#  validation:
+#    whitelist: true
+#    forbidNonWhitelisted: true
+#
+#swagger:
+#  title: Fido2 WebAuthn + OpenID Connect
+#  description: API description
+#  version: 0.1.0
+#  tag: api
+#  path: documentation

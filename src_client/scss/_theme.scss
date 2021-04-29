@@ -1,0 +1,7 @@
+@use "@material/theme" with (
+  $primary: #025D5F,
+  $secondary: #FFC03B,
+  $background: #F0F0F1
+);
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap');
