@@ -5,7 +5,7 @@ import {
   OutputChunk,
   Plugin,
 } from 'rollup';
-import { from, of } from 'rxjs';
+import { from, lastValueFrom, of } from 'rxjs';
 import { filter, map, tap } from 'rxjs/operators';
 import * as fs from 'fs-extra';
 import * as deepmerge from 'deepmerge';
@@ -19,8 +19,8 @@ const metadata: Plugin = () => {
       bundle: OutputBundle,
     ) => {
       const destination: string = join(__dirname, 'src/metadata.json');
-      await from(Object.values(bundle))
-        .pipe(
+      await lastValueFrom(
+        from(Object.values(bundle)).pipe(
           filter((_: OutputAsset | OutputChunk) =>
             'isEntry' in _ ? !!_.isEntry && !_.exports.length : true,
           ),
@@ -46,8 +46,8 @@ const metadata: Plugin = () => {
               : _.meta,
           ),
           tap((_) => fs.outputJsonSync(destination, _)),
-        )
-        .toPromise();
+        ),
+      );
     },
   };
 };
@@ -56,14 +56,14 @@ const cleanComments: Plugin = () => {
   return {
     name: 'cleanComments',
     renderChunk: async (code: string) => {
-      await of(code)
-        .pipe(
+      return await lastValueFrom(
+        of(code).pipe(
           map((_: string) =>
             _.replace(/\/\*[\s\S]*?\*\/|([^:]|^)\/\/.*$/g, ''),
           ),
           map((_: string) => _.replace(/\n/g, '')),
-        )
-        .toPromise();
+        ),
+      );
     },
   };
 };
