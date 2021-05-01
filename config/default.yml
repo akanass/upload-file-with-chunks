@@ -31,6 +31,20 @@ assets:
     lastModified: true
     maxAge: 86400000
 
+##
+# Configuration for file upload input inside ../views/upload.hbs
+#
+# - accept property is
+#    an array of the **template value** from https://www.iana.org/assignments/media-types/media-types.xhtml
+#    or */* to allow all types
+# - multiple property is a boolean to allow multiple files selection
+##
+selectFilesInput:
+  accept:
+    - application/pdf
+    - image/*
+  multiple: false
+
 #pipes:
 #  validation:
 #    whitelist: true

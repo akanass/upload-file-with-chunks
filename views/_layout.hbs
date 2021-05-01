@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Upload File With Chunks</title>
+    <title>Upload File{{#if multiple}}s{{/if}} With Chunks</title>
     <base href="/">
     <meta name="viewport" content="minimum-scale=1,initial-scale=1,width=device-width,shrink-to-fit=no">
 
@@ -30,11 +30,11 @@
 <div id="main-content" class="main content-center">
     <div class="mdc-card">
         <div class="mdc-card__header mdc-typography--headline7">
-            Upload File With Chunks Has Never Been Easier
+            Upload File{{#if multiple}}s{{/if}} With Chunks Has Never Been Easier
         </div>
         <div class="mdc-card__content">
             <div class="mdc-card__content-title mdc-typography--headline4">
-                Choose the files to upload
+                Choose the file{{#if multiple}}s{{/if}} to upload
             </div>
             {{{body}}}
         </div>

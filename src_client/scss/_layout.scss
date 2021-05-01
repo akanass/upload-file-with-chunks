@@ -7,7 +7,7 @@ html, body {
   background-color: theme.$background;
 }
 
-.main{
+.main {
   height: 100vh;
 }
 
@@ -17,19 +17,13 @@ html, body {
   align-items: center;
 }
 
-.direction-column {
-  flex-direction: column;
+.justify-content-space {
+  justify-content: space-around;
 }
 
 .mdc-typography--caption {
   color: theme.$grey-600;
   padding: 5px 0;
-  text-align: justify;
-}
-
-.mdc-typography--headline6 {
-  color: theme.$grey-500;
-  padding: 10px 0;
   text-align: justify;
 }
 
@@ -64,6 +58,19 @@ html, body {
   text-align: center;
 }
 
+.mdc-button {
+  width: 40%;
+  @include button.icon-color(theme.$secondary);
+}
+
+.mdc-button__label {
+  color: theme.$secondary;
+}
+
+.mdc-button:disabled .mdc-button__label {
+  color: theme.$grey-600;
+}
+
 .error-message {
   display: flex;
   color: theme.$error;
@@ -87,4 +94,14 @@ html, body {
 
 .mgt50 {
   margin-top: 50px;
+}
+
+#preview {
+  border-radius: inherit;
+  border: 1px solid theme.$primary;
+  padding: 7px;
+}
+
+#input-file {
+  display: none;
 }

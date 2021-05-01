@@ -16,3 +16,8 @@ export type ViewsConfig = {
   readonly includeViewExtension: boolean;
   readonly engineOptions: any;
 };
+
+export type SelectFilesInputConfig = {
+  readonly accept: '*/*' | string[];
+  readonly multiple: boolean;
+};
