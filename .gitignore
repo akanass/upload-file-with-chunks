@@ -3,8 +3,6 @@
 /node_modules
 /public/css/*
 /public/js/*
-/public/uploaded/*
-!/public/uploaded/.gitkeep
 !/public/css/.gitkeep
 !/public/js/.gitkeep
 src/metadata.json

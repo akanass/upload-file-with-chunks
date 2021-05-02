@@ -76,6 +76,18 @@ const inputFileProcess = () => {
       formatFileSizeDisplay(files[0].size),
       files[0].type,
     );
+
+    /*files[0].arrayBuffer().then((_) => console.log(new Uint8Array(_)));
+    const r = new FileReader();
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    r.onloadend = (e) => console.log(new Uint8Array(e.target.result));
+    r.readAsArrayBuffer(files[0]);*/
+
+    /*rxFileUpload({
+      url: '/api/upload',
+      headers: { 'my-custom-header': 'toto', 'content-type': 'test' },
+    });*/
   });
   // clean previous selected files
   selectFilesInput.addEventListener(
@@ -91,10 +103,10 @@ const formatFileSizeDisplay = (size: number) => {
   if (size < 1024) {
     return `${size} bytes`;
   } else if (size >= 1024 && size < 1048576) {
-    return `${(size / 1024).toFixed(1)} KB`;
+    return `${(size / 1024).toFixed(1)} Kb`;
   } else if (size >= 1048576 && size < 1073741824) {
-    return `${(size / 1048576).toFixed(1)} MB`;
+    return `${(size / 1048576).toFixed(1)} Mb`;
   } else if (size >= 1073741824) {
-    return `${(size / 1073741824).toFixed(1)} GB`;
+    return `${(size / 1073741824).toFixed(1)} Gb`;
   }
 };
