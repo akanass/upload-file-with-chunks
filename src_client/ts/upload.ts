@@ -77,13 +77,6 @@ const inputFileProcess = () => {
       files[0].type,
     );
 
-    /*files[0].arrayBuffer().then((_) => console.log(new Uint8Array(_)));
-    const r = new FileReader();
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    r.onloadend = (e) => console.log(new Uint8Array(e.target.result));
-    r.readAsArrayBuffer(files[0]);*/
-
     /*rxFileUpload({
       url: '/api/upload',
       headers: { 'my-custom-header': 'toto', 'content-type': 'test' },

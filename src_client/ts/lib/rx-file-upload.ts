@@ -1,5 +1,8 @@
 import { ajax, AjaxConfig, AjaxResponse } from 'rxjs/ajax';
-import { Observable } from 'rxjs';
+import { from, Observable } from 'rxjs';
+import { map, toArray } from 'rxjs/operators';
+import { SHA256 } from 'crypto-es/lib/sha256';
+import { WordArray } from 'crypto-es/lib/core';
 
 /**
  * RxFileUploadConfig type declaration
@@ -15,6 +18,11 @@ export type RxFileUploadConfig = Omit<
   | 'includeUploadProgress'
   | 'includeDownloadProgress'
 > & { chunkSize?: number; maxConnections?: number };
+
+/**
+ * Chunk size type definition
+ */
+export type ChunkSize = { startByte: number; endByte: number };
 
 /**
  * List of AjaxConfig allowed properties to be sure to have the right ones when using JS and not TS
@@ -54,9 +62,7 @@ const defaultMaxConnections = 3;
  * Helper to check if we are in the browser and all required elements are available
  */
 export const supportRxFileUpload = (): boolean =>
-  typeof window !== 'undefined' &&
-  typeof window.crypto !== 'undefined' &&
-  typeof XMLHttpRequest === 'function';
+  typeof window !== 'undefined' && typeof XMLHttpRequest === 'function';
 
 /**
  * RxFileUpload class definition
@@ -187,6 +193,40 @@ export class RxFileUpload {
       method: 'POST',
       includeUploadProgress: true,
     };
+  };
+
+  /**
+   * Helper to calculate each chunk size
+   *
+   * @param {number} fileSize the size of the file to split on chunks
+   */
+  private _calculateChunkSizes = (
+    fileSize: number,
+  ): Observable<ChunkSize[]> => {
+    return from(
+      Array.from(
+        { length: Math.max(Math.ceil(fileSize / this._chunkSize), 1) },
+        (_, offset: number) => offset++,
+      ),
+    ).pipe(
+      map((offset: number) => ({
+        startByte: offset * this._chunkSize,
+        endByte: Math.min(fileSize, (offset + 1) * this._chunkSize),
+      })),
+      toArray(),
+    );
+  };
+
+  /**
+   * Helper to calculate file checksum and return it as sha256 string
+   * @param file
+   */
+  private _calculateCheckSum = (file: File): Observable<string> => {
+    return from(file.arrayBuffer()).pipe(
+      map((arrayBuffer: ArrayBuffer) =>
+        SHA256(WordArray.create(new Uint8Array(arrayBuffer))).toString(),
+      ),
+    );
   };
 }
 
