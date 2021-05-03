@@ -122,8 +122,6 @@ export class RxFileUpload {
 
     // set ajax function property
     this._ajax = ajax;
-
-    console.log(this._config);
   }
 
   /**
