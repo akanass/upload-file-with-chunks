@@ -1,6 +1,13 @@
 import { ajax, AjaxConfig, AjaxResponse } from 'rxjs/ajax';
-import { from, Observable } from 'rxjs';
-import { map, toArray } from 'rxjs/operators';
+import { from, merge, Observable, of, Subject } from 'rxjs';
+import {
+  distinctUntilChanged,
+  filter,
+  map,
+  mergeMap,
+  tap,
+  toArray,
+} from 'rxjs/operators';
 import { SHA256 } from 'crypto-es/lib/sha256';
 import { WordArray } from 'crypto-es/lib/core';
 
@@ -22,7 +29,17 @@ export type RxFileUploadConfig = Omit<
 /**
  * Chunk size type definition
  */
-export type ChunkSize = { startByte: number; endByte: number };
+export type RxFileUploadChunkSize = { startByte: number; endByte: number };
+
+/**
+ * Additional formData type definition
+ */
+export type RxFileUploadAdditionalFormData = { fieldName: string; data: any };
+
+/**
+ * Progress Observable data type definition
+ */
+export type RxFileUploadProgressData = { progress: number; fileIndex?: number };
 
 /**
  * List of AjaxConfig allowed properties to be sure to have the right ones when using JS and not TS
@@ -82,6 +99,8 @@ export class RxFileUpload {
   private readonly _chunkSize: number;
   // private property to store simulate max connections
   private readonly _maxConnections: number;
+  // private property to store progress Subject
+  private readonly _progress$: Subject<RxFileUploadProgressData>;
 
   /**
    * Class constructor
@@ -124,17 +143,110 @@ export class RxFileUpload {
 
     // set ajax function property
     this._ajax = ajax;
+
+    // set progress Subject
+    this._progress$ = new Subject<RxFileUploadProgressData>();
   }
 
-  public uploadFile = (file: File): Observable<AjaxResponse<any>> => {
-    const f = new FormData();
-    //f.append('filename', file.name);
-    //f.append('filesize', `${file.size}`);
-    f.append('file', file);
-    f.append('more', JSON.stringify({ test: 'test' }));
+  /**
+   * Getter to return progress Observable
+   */
+  public get progress$(): Observable<RxFileUploadProgressData> {
+    return this._progress$.pipe(distinctUntilChanged());
+  }
 
-    return this._ajax({ ...this._config, body: f });
-  };
+  /**
+   * Function to upload one file to the server with optional additional data
+   *
+   * @param {File} file the uploaded file
+   * @param {RxFileUploadAdditionalFormData} additionalFormData sent to the server
+   */
+  public uploadFile = <T>(
+    file: File,
+    additionalFormData?: RxFileUploadAdditionalFormData,
+  ): Observable<T> =>
+    this._fileBodyData(file, additionalFormData).pipe(
+      mergeMap((f: FormData) =>
+        this._ajax<T>({ ...this._config, body: f }).pipe(
+          mergeMap((ajaxResponse: AjaxResponse<T>) =>
+            merge(
+              of(ajaxResponse.type).pipe(
+                filter((type) => type === 'upload_progress'),
+                tap(() =>
+                  this._progress$.next({
+                    progress: Math.round(
+                      (ajaxResponse.loaded * 100) / ajaxResponse.total,
+                    ),
+                  }),
+                ),
+                map(() => ajaxResponse),
+              ),
+              of(ajaxResponse.type).pipe(
+                filter((type) => type === 'upload_load'),
+                tap(() => this._progress$.complete()),
+                map(() => ajaxResponse),
+              ),
+              of(ajaxResponse.type).pipe(
+                filter((type) => type === 'download_load'),
+                map(() => ajaxResponse),
+              ),
+            ),
+          ),
+          filter(
+            (ajaxResponse: AjaxResponse<T>) =>
+              ajaxResponse.type === 'download_load',
+          ),
+          map((ajaxResponse: AjaxResponse<T>) => ajaxResponse.response),
+        ),
+      ),
+    );
+
+  /**
+   * Helper to build formData body for one file upload
+   *
+   * @param {File} file the uploaded file
+   * @param {RxFileUploadAdditionalFormData} additionalFormData sent to the server
+   */
+  private _fileBodyData = (
+    file: File,
+    additionalFormData?: RxFileUploadAdditionalFormData,
+  ): Observable<FormData> =>
+    this._calculateCheckSum(file).pipe(
+      map((checksum: string) => ({
+        fileData: this._serialize({
+          name: file.name,
+          size: file.size,
+          lastModified: file.lastModified,
+          type: file.type,
+          sha256Checksum: checksum,
+        }),
+        file,
+      })),
+      map((data: { fileData: string; file: File }) =>
+        typeof additionalFormData !== 'undefined' &&
+        typeof additionalFormData.fieldName === 'string' &&
+        ['string', 'object'].includes(typeof additionalFormData.data)
+          ? {
+              formData: new FormData(),
+              data: {
+                ...data,
+                [additionalFormData.fieldName]: this._serialize(
+                  additionalFormData.data,
+                ),
+              },
+            }
+          : {
+              formData: new FormData(),
+              data,
+            },
+      ),
+      map((_: { formData: FormData; data: any }) => {
+        Object.keys(_.data).forEach((key: string) =>
+          _.formData.append(key, _.data[key]),
+        );
+        return _.formData;
+      }),
+    );
 
   /**
    * Function to check if chunk size is a multiple of 1024 bytes (1 Kb)
@@ -212,8 +324,8 @@ export class RxFileUpload {
    */
   private _calculateChunkSizes = (
     fileSize: number,
-  ): Observable<ChunkSize[]> => {
-    return from(
+  ): Observable<RxFileUploadChunkSize[]> =>
+    from(
       Array.from(
         { length: Math.max(Math.ceil(fileSize / this._chunkSize), 1) },
         (_, offset: number) => offset++,
@@ -225,19 +337,26 @@ export class RxFileUpload {
       })),
       toArray(),
     );
-  };
 
   /**
    * Helper to calculate file checksum and return it as sha256 string
-   * @param file
+   *
+   * @param {File} file the file to calculate the checksum
    */
-  private _calculateCheckSum = (file: File): Observable<string> => {
-    return from(file.arrayBuffer()).pipe(
+  private _calculateCheckSum = (file: File): Observable<string> =>
+    from(file.arrayBuffer()).pipe(
       map((arrayBuffer: ArrayBuffer) =>
         SHA256(WordArray.create(new Uint8Array(arrayBuffer))).toString(),
       ),
     );
-  };
+
+  /**
+   * Helper to serialize additional formData value
+   *
+   * @param {any} data the value to serialize string or object
+   */
+  private _serialize = (data: any): string =>
+    typeof data === 'string' ? data : JSON.stringify(data);
 }
 
 /**

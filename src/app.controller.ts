@@ -1,6 +1,10 @@
 import { Controller, Get, Res } from '@nestjs/common';
 import * as Config from 'config';
-import { SelectFilesInputConfig } from './types/config.type';
+import {
+  UploadInputConfig,
+  UploadConfig,
+  UploadApiEndpointConfig,
+} from './types/config.type';
 
 @Controller()
 export class AppController {
@@ -9,26 +13,33 @@ export class AppController {
    */
   @Get('*')
   async displayUploadPage(@Res() res) {
-    // get file upload input configuration
-    let selectFilesInputConfig: SelectFilesInputConfig;
+    // get file upload configuration
+    let uploadConfig: UploadConfig;
+    let uploadInputConfig: UploadInputConfig = {
+      accept: '*/*',
+      multiple: false,
+    };
+    let uploadApiEndpointConfig: UploadApiEndpointConfig = {
+      fileEndpoint: '/api/upload',
+      fileWithChunksEndpoint: '/api/upload/chunk',
+    };
+
     try {
-      selectFilesInputConfig = Config.get<SelectFilesInputConfig>(
-        'selectFilesInput',
-      );
-    } catch (_) {
-      selectFilesInputConfig = {
-        accept: '*/*',
-        multiple: false,
-      };
-    }
+      uploadConfig = Config.get<UploadConfig>('upload');
+      uploadInputConfig = uploadConfig.input;
+      uploadApiEndpointConfig = uploadConfig.api;
+    } catch (_) {}
+
     res.view('upload', {
-      accept: Array.isArray(selectFilesInputConfig.accept)
-        ? selectFilesInputConfig.accept.join(',')
+      accept: Array.isArray(uploadInputConfig.accept)
+        ? uploadInputConfig.accept.join(',')
         : '*/*',
       multiple:
-        typeof selectFilesInputConfig.multiple === 'boolean'
-          ? selectFilesInputConfig.multiple
+        typeof uploadInputConfig.multiple === 'boolean'
+          ? uploadInputConfig.multiple
           : false,
+      fileEndpoint: uploadApiEndpointConfig.fileEndpoint,
+      fileWithChunksEndpoint: uploadApiEndpointConfig.fileWithChunksEndpoint,
     });
   }
 }

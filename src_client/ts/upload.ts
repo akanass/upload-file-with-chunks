@@ -1,9 +1,13 @@
+import {
+  RxFileUpload,
+  rxFileUpload,
+  RxFileUploadProgressData,
+} from './lib/rx-file-upload';
+import { Subscription } from 'rxjs';
+
 /**
  * Get page's elements
  */
-import { rxFileUpload } from './lib/rx-file-upload';
-import { filter } from 'rxjs/operators';
-
 const selectFilesInput: HTMLInputElement = document.querySelector(
   '#input-file',
 );
@@ -14,12 +18,21 @@ const uploadFilesButton: HTMLButtonElement = document.querySelector(
   '#upload-files',
 );
 const previewContainer: HTMLDivElement = document.querySelector('#preview');
+const fileEndpointInput: HTMLInputElement = document.querySelector(
+  '#api-file-endpoint',
+);
+const fileWithChunksEndpointInput: HTMLInputElement = document.querySelector(
+  '#api-file-with-chunks-endpoint',
+);
 
 /**
  * Variables used inside process
  */
 const defaultFilesListContent = '<p>No file selected for the moment.</p>';
 let files: File[];
+
+let progressSubscription: Subscription;
+let uploadSubscription: Subscription;
 
 /**
  * Add event listener on window.load to put all process in place
@@ -33,6 +46,9 @@ window.addEventListener('load', () => {
 
   // set input file click process
   inputFileProcess();
+
+  // set upload file click process
+  uploadFilesButtonProcess();
 });
 
 /**
@@ -51,7 +67,9 @@ const resetElements = () => {
  * Process when we click on select files button
  */
 const selectFilesButtonProcess = () => {
-  selectFilesButton.addEventListener('click', () => {
+  selectFilesButton.addEventListener('click', (e: MouseEvent) => {
+    // stop normal process
+    e.preventDefault();
     // click on hidden input file
     selectFilesInput.click();
     // reset all elements
@@ -74,24 +92,72 @@ const inputFileProcess = () => {
       (_, idx: number) => idx++,
     ).map((i: number) => fileList.item(i));
 
-    console.log(
-      files[0].name,
-      formatFileSizeDisplay(files[0].size),
-      files[0].type,
-    );
+    // update preview container TODO
 
-    rxFileUpload({
-      url: '/api/upload',
-    })
-      .uploadFile(files[0])
-      .pipe(filter((_) => _.type === 'upload_progress'))
-      .subscribe((_) => console.log(_));
+    // enable upload button
+    uploadFilesButton.disabled = false;
   });
   // clean previous selected files
   selectFilesInput.addEventListener(
     'click',
     (e: Event) => (e.target['value'] = null),
   );
+};
+
+/**
+ * Process when click on upload button
+ */
+const uploadFilesButtonProcess = () => {
+  uploadFilesButton.addEventListener('click', (e: MouseEvent) => {
+    // stop normal process
+    e.preventDefault();
+
+    // disable all buttons
+    uploadFilesButton.disabled = true;
+    selectFilesButton.disabled = true;
+
+    // delete previous subscription to memory free
+    if (!!uploadSubscription) {
+      uploadSubscription.unsubscribe();
+    }
+    if (!!progressSubscription) {
+      progressSubscription.unsubscribe();
+    }
+
+    // import upload library
+    import('./lib/rx-file-upload').then(({ rxFileUpload }) => {
+      // create new instance of RxFileUpload
+      const manager: RxFileUpload = rxFileUpload({
+        url: fileEndpointInput.value,
+      });
+
+      // listen on progress to update UI TODO
+      progressSubscription = manager.progress$.subscribe(
+        (_: RxFileUploadProgressData) => console.log(_),
+      );
+
+      // upload file
+      uploadSubscription = manager
+        .uploadFile<any>(files[0], {
+          fieldName: 'myAdditionalData',
+          data: { test: 'one test value' },
+        })
+        .subscribe({
+          next: (_) => {
+            // update file path UI if exists inside the response TODO
+            console.log(_);
+
+            // delete previous subscription to memory free
+            uploadSubscription.unsubscribe();
+            progressSubscription.unsubscribe();
+
+            // enable button with timeout to avoid flickering
+            setTimeout(() => (selectFilesButton.disabled = false), 500);
+          },
+          error: (e) => console.error(e.metadata),
+        });
+    });
+  });
 };
 
 /**

@@ -17,7 +17,17 @@ export type ViewsConfig = {
   readonly engineOptions: any;
 };
 
-export type SelectFilesInputConfig = {
+export type UploadConfig = {
+  readonly input: UploadInputConfig;
+  readonly api: UploadApiEndpointConfig;
+};
+
+export type UploadApiEndpointConfig = {
+  readonly fileEndpoint: string;
+  readonly fileWithChunksEndpoint: string;
+};
+
+export type UploadInputConfig = {
   readonly accept: '*/*' | string[];
   readonly multiple: boolean;
 };
