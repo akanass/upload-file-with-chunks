@@ -10,6 +10,7 @@ import * as Config from 'config';
 import { join } from 'path';
 import * as Handlebars from 'handlebars';
 import * as HtmlMinifier from 'html-minifier-terser';
+import * as multipart from 'fastify-multipart';
 import * as metadata from './metadata.json';
 
 async function bootstrap(
@@ -23,8 +24,13 @@ async function bootstrap(
     new FastifyAdapter(Object.assign({}, config.options)),
   );
 
+  // register multipart plugin
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  await app.register(multipart);
+
   // register all plugins
-  app
+  await app
     // set static assets
     .useStaticAssets(
       Object.assign({}, assets.options, {

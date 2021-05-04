@@ -1,6 +1,9 @@
 /**
  * Get page's elements
  */
+import { rxFileUpload } from './lib/rx-file-upload';
+import { filter } from 'rxjs/operators';
+
 const selectFilesInput: HTMLInputElement = document.querySelector(
   '#input-file',
 );
@@ -77,10 +80,12 @@ const inputFileProcess = () => {
       files[0].type,
     );
 
-    /*rxFileUpload({
+    rxFileUpload({
       url: '/api/upload',
-      headers: { 'my-custom-header': 'toto', 'content-type': 'test' },
-    });*/
+    })
+      .uploadFile(files[0])
+      .pipe(filter((_) => _.type === 'upload_progress'))
+      .subscribe((_) => console.log(_));
   });
   // clean previous selected files
   selectFilesInput.addEventListener(

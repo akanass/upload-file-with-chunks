@@ -62,7 +62,9 @@ const defaultMaxConnections = 3;
  * Helper to check if we are in the browser and all required elements are available
  */
 export const supportRxFileUpload = (): boolean =>
-  typeof window !== 'undefined' && typeof XMLHttpRequest === 'function';
+  typeof window !== 'undefined' &&
+  typeof XMLHttpRequest === 'function' &&
+  typeof FormData === 'function';
 
 /**
  * RxFileUpload class definition
@@ -124,6 +126,16 @@ export class RxFileUpload {
     this._ajax = ajax;
   }
 
+  public uploadFile = (file: File): Observable<AjaxResponse<any>> => {
+    const f = new FormData();
+    //f.append('filename', file.name);
+    //f.append('filesize', `${file.size}`);
+    f.append('file', file);
+    f.append('more', JSON.stringify({ test: 'test' }));
+
+    return this._ajax({ ...this._config, body: f });
+  };
+
   /**
    * Function to check if chunk size is a multiple of 1024 bytes (1 Kb)
    *
@@ -173,7 +185,7 @@ export class RxFileUpload {
 
     // set configuration in class property after removing "content-type" header if exists
     // because the "body" will be a "FormData" so
-    // a "content-type" of "application/x-www-form-urlencoded; charset=UTF-8" will be set automatically
+    // a "content-type" of "multipart/form-data; boundary=----WebKitFormBoundary...." will be set automatically
     // and, after adding "method" and "includeUploadProgress" properties.
     this._config = {
       ...(!!config.headers

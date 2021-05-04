@@ -44,15 +44,3 @@ selectFilesInput:
     - application/pdf
     - image/*
   multiple: false
-
-#pipes:
-#  validation:
-#    whitelist: true
-#    forbidNonWhitelisted: true
-#
-#swagger:
-#  title: Fido2 WebAuthn + OpenID Connect
-#  description: API description
-#  version: 0.1.0
-#  tag: api
-#  path: documentation
