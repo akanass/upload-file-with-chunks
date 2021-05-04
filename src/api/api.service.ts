@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { from, Observable, of } from 'rxjs';
-import { catchError, filter, map, mergeMap, reduce } from 'rxjs/operators';
+import { filter, map, mergeMap, reduce } from 'rxjs/operators';
 
-import { promisify } from 'util';
-import { pipeline } from 'stream';
+import { pipeline } from 'stream/promises';
 import { createWriteStream } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -48,9 +47,7 @@ export class ApiService {
   ): Observable<string> =>
     of(join(tmpdir(), fileName)).pipe(
       mergeMap((path: string) =>
-        from(promisify(pipeline)(file, createWriteStream(path))).pipe(
-          map(() => path),
-        ),
+        from(pipeline(file, createWriteStream(path))).pipe(map(() => path)),
       ),
     );
 
