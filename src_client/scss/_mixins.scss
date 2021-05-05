@@ -4,8 +4,12 @@
 );
 @use "@material/card";
 @use "@material/button/styles";
+@use "@material/checkbox";
+@use "@material/form-field";
 
 
 @include typography.core-styles; // apply typography style
 @include card.core-styles; // apply card style
+@include checkbox.core-styles; // apply checkbox style
+@include form-field.core-styles; // apply form-field style
 
