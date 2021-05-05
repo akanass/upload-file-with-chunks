@@ -1,6 +1,7 @@
 import { Subscription } from 'rxjs';
 import { defaultFilesListContent, fileUploadDetailTpl } from './_templates';
 import {
+  addChecksumInput,
   fileEndpointInput,
   previewContainer,
   selectFilesButton,
@@ -118,6 +119,7 @@ const uploadFilesButtonProcess = (): void => {
       // create new instance of RxFileUpload
       const manager = rxFileUpload({
         url: fileEndpointInput.value,
+        addCheckSum: addChecksumInput.checked,
       });
 
       // listen on progress to update UI

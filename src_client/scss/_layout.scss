@@ -21,6 +21,10 @@ html, body {
   justify-content: space-around;
 }
 
+.justify-content-left {
+  justify-content: left;
+}
+
 .direction-column {
   flex-direction: column;
 }
@@ -136,4 +140,10 @@ html, body {
 
 .display-none {
   display: none;
+}
+
+.options-checkbox-container {
+  display: flex;
+  justify-content: space-around;
+  flex-grow: 2;
 }

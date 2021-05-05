@@ -14,6 +14,10 @@ const fileEndpointInput: HTMLInputElement = document.querySelector(
 const fileWithChunksEndpointInput: HTMLInputElement = document.querySelector(
   '#api-file-with-chunks-endpoint',
 );
+const useChunkInput: HTMLInputElement = document.querySelector('#use-chunks');
+const addChecksumInput: HTMLInputElement = document.querySelector(
+  '#add-checksum',
+);
 
 export {
   selectFilesInput,
@@ -22,4 +26,6 @@ export {
   previewContainer,
   fileEndpointInput,
   fileWithChunksEndpointInput,
+  useChunkInput,
+  addChecksumInput,
 };

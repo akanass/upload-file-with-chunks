@@ -16,6 +16,47 @@
         <span id="button-label" class="mdc-button__label">Upload</span>
     </button>
 </div>
+<div id="options" class="content-center justify-content-left mgt30">
+    <div class="mdc-typography--body2">Upload options:</div>
+    <div class="options-checkbox-container">
+        <div class="mdc-form-field">
+            <div class="mdc-checkbox">
+                <input type="checkbox"
+                       class="mdc-checkbox__native-control"
+                       id="add-checksum"/>
+                <div class="mdc-checkbox__background">
+                    <svg class="mdc-checkbox__checkmark"
+                         viewBox="0 0 24 24">
+                        <path class="mdc-checkbox__checkmark-path"
+                              fill="none"
+                              d="M1.73,12.91 8.1,19.28 22.79,4.59"/>
+                    </svg>
+                    <div class="mdc-checkbox__mixedmark"></div>
+                </div>
+                <div class="mdc-checkbox__ripple"></div>
+            </div>
+            <label class="mdc-typography--caption" for="add-checksum">Add sha256 checksum</label>
+        </div>
+        <div class="mdc-form-field">
+            <div class="mdc-checkbox">
+                <input type="checkbox"
+                       class="mdc-checkbox__native-control"
+                       id="use-chunks" />
+                <div class="mdc-checkbox__background">
+                    <svg class="mdc-checkbox__checkmark"
+                         viewBox="0 0 24 24">
+                        <path class="mdc-checkbox__checkmark-path"
+                              fill="none"
+                              d="M1.73,12.91 8.1,19.28 22.79,4.59"/>
+                    </svg>
+                    <div class="mdc-checkbox__mixedmark"></div>
+                </div>
+                <div class="mdc-checkbox__ripple"></div>
+            </div>
+            <label class="mdc-typography--caption" for="use-chunks">Use chunks to upload file</label>
+        </div>
+    </div>
+</div>
 <div id="preview">
     <div class="preview mdc-typography--body2 mgt30">No file selected for the moment.</div>
 </div>
