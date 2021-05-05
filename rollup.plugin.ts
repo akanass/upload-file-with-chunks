@@ -59,9 +59,9 @@ const cleanComments: Plugin = () => {
       return await lastValueFrom(
         of(code).pipe(
           map((_: string) =>
-            _.replace(/\/\*[\s\S]*?\*\/|([^:]|^)\/\/.*$/g, ''),
+            _.replace(/\/\*[\s\S]*?\*\/|([^:]|^)\/\/.*$/gm, ''),
           ),
-          map((_: string) => _.replace(/\n/g, '')),
+          map((_: string) => _.replace(/\n/gm, '')),
         ),
       );
     },

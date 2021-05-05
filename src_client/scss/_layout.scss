@@ -21,6 +21,10 @@ html, body {
   justify-content: space-around;
 }
 
+.direction-column {
+  flex-direction: column;
+}
+
 .mdc-typography--caption {
   color: theme.$grey-600;
   padding: 5px 0;
@@ -31,6 +35,10 @@ html, body {
   color: theme.$grey-700;
   padding: 7px 0;
   text-align: justify;
+}
+
+.txt-al {
+  text-align: left;
 }
 
 .mdc-card {
@@ -71,37 +79,61 @@ html, body {
   color: theme.$grey-600;
 }
 
-.error-message {
-  display: flex;
-  color: theme.$error;
-  align-items: center;
-  justify-content: center;
-  text-align: justify;
-  padding-bottom: 10px;
-}
-
-.error-message .message {
-  padding-left: 10px;
-}
-
 .mgt30 {
   margin-top: 30px;
 }
-
-.mgt20 {
-  margin-top: 20px;
-}
-
-.mgt50 {
-  margin-top: 50px;
-}
-
 #preview {
-  border-radius: inherit;
+  padding-bottom: 20px;
+}
+
+.preview {
+  border-radius: 5px;
   border: 1px solid theme.$primary;
   padding: 7px;
 }
 
-#input-file {
+.file-upload-detail {
+  display: flex;
+}
+
+.file-upload-detail-description {
+  width: 70%;
+  display: flex;
+}
+
+.file-upload-detail-description .file-name {
+  overflow: hidden;
+}
+
+.file-upload-detail-progress {
+  width: 27%;
+  padding: 0 10px;
+}
+
+.progress-container, .progress-value {
+  border-radius: 16px;
+}
+
+.progress-container {
+  background-color: theme.$grey-200;
+  width: 100%;
+  overflow: hidden;
+}
+
+.progress-value {
+  background-color: theme.$primary;
+  color: theme.$grey-600;
+  width: 0;
+}
+
+.progress-value-content {
+  color: theme.$secondary;
+}
+
+.progress-value-text {
+  padding: 0.01em 16px;
+}
+
+.display-none {
   display: none;
 }

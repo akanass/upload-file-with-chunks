@@ -29,17 +29,36 @@ export type RxFileUploadConfig = Omit<
 /**
  * Chunk size type definition
  */
-export type RxFileUploadChunkSize = { startByte: number; endByte: number };
+export type RxFileUploadChunkSize = {
+  readonly startByte: number;
+  readonly endByte: number;
+};
 
 /**
  * Additional formData type definition
  */
-export type RxFileUploadAdditionalFormData = { fieldName: string; data: any };
+export type RxFileUploadAdditionalFormData = {
+  readonly fieldName: string;
+  readonly data: any;
+};
 
 /**
  * Progress Observable data type definition
  */
-export type RxFileUploadProgressData = { progress: number; fileIndex?: number };
+export type RxFileUploadProgressData = {
+  readonly progress: number;
+  readonly fileIndex?: number;
+};
+
+/**
+ * Upload Observable response type definition
+ */
+export type RxFileUploadResponse<T> = {
+  readonly status: number;
+  readonly headers: Record<string, string>;
+  readonly response: T;
+  readonly fileIndex?: number;
+};
 
 /**
  * List of AjaxConfig allowed properties to be sure to have the right ones when using JS and not TS
@@ -164,7 +183,7 @@ export class RxFileUpload {
   public uploadFile = <T>(
     file: File,
     additionalFormData?: RxFileUploadAdditionalFormData,
-  ): Observable<T> =>
+  ): Observable<RxFileUploadResponse<T>> =>
     this._fileBodyData(file, additionalFormData).pipe(
       mergeMap((f: FormData) =>
         this._ajax<T>({ ...this._config, body: f }).pipe(
@@ -196,7 +215,11 @@ export class RxFileUpload {
             (ajaxResponse: AjaxResponse<T>) =>
               ajaxResponse.type === 'download_load',
           ),
-          map((ajaxResponse: AjaxResponse<T>) => ajaxResponse.response),
+          map((ajaxResponse: AjaxResponse<T>) => ({
+            status: ajaxResponse.status,
+            response: ajaxResponse.response,
+            headers: ajaxResponse.responseHeaders,
+          })),
         ),
       ),
     );

@@ -1,35 +1,22 @@
-import {
-  RxFileUpload,
-  rxFileUpload,
-  RxFileUploadProgressData,
-} from './lib/rx-file-upload';
 import { Subscription } from 'rxjs';
-
-/**
- * Get page's elements
- */
-const selectFilesInput: HTMLInputElement = document.querySelector(
-  '#input-file',
-);
-const selectFilesButton: HTMLButtonElement = document.querySelector(
-  '#select-files',
-);
-const uploadFilesButton: HTMLButtonElement = document.querySelector(
-  '#upload-files',
-);
-const previewContainer: HTMLDivElement = document.querySelector('#preview');
-const fileEndpointInput: HTMLInputElement = document.querySelector(
-  '#api-file-endpoint',
-);
-const fileWithChunksEndpointInput: HTMLInputElement = document.querySelector(
-  '#api-file-with-chunks-endpoint',
-);
+import { defaultFilesListContent, fileUploadDetailTpl } from './_templates';
+import {
+  fileEndpointInput,
+  previewContainer,
+  selectFilesButton,
+  selectFilesInput,
+  uploadFilesButton,
+} from './_selectors';
+import {
+  RxFileUploadProgressData,
+  RxFileUploadResponse,
+} from './lib/rx-file-upload';
 
 /**
  * Variables used inside process
  */
-const defaultFilesListContent = '<p>No file selected for the moment.</p>';
 let files: File[];
+let fileDetailSelectors: any[];
 
 let progressSubscription: Subscription;
 let uploadSubscription: Subscription;
@@ -54,9 +41,10 @@ window.addEventListener('load', () => {
 /**
  * Process to reset all elements used in upload process
  */
-const resetElements = () => {
+const resetElements = (): void => {
   // clean file list
   files = [];
+  fileDetailSelectors = [];
   // delete preview list
   previewContainer.innerHTML = defaultFilesListContent;
   // disable upload button
@@ -66,7 +54,7 @@ const resetElements = () => {
 /**
  * Process when we click on select files button
  */
-const selectFilesButtonProcess = () => {
+const selectFilesButtonProcess = (): void => {
   selectFilesButton.addEventListener('click', (e: MouseEvent) => {
     // stop normal process
     e.preventDefault();
@@ -80,7 +68,7 @@ const selectFilesButtonProcess = () => {
 /**
  * Process when click on input type file
  */
-const inputFileProcess = () => {
+const inputFileProcess = (): void => {
   // build files array and display file list in preview container
   selectFilesInput.addEventListener('change', (e: Event) => {
     // get file list
@@ -92,7 +80,8 @@ const inputFileProcess = () => {
       (_, idx: number) => idx++,
     ).map((i: number) => fileList.item(i));
 
-    // update preview container TODO
+    // update preview container
+    buildFileListHtml();
 
     // enable upload button
     uploadFilesButton.disabled = false;
@@ -107,7 +96,7 @@ const inputFileProcess = () => {
 /**
  * Process when click on upload button
  */
-const uploadFilesButtonProcess = () => {
+const uploadFilesButtonProcess = (): void => {
   uploadFilesButton.addEventListener('click', (e: MouseEvent) => {
     // stop normal process
     e.preventDefault();
@@ -127,43 +116,108 @@ const uploadFilesButtonProcess = () => {
     // import upload library
     import('./lib/rx-file-upload').then(({ rxFileUpload }) => {
       // create new instance of RxFileUpload
-      const manager: RxFileUpload = rxFileUpload({
+      const manager = rxFileUpload({
         url: fileEndpointInput.value,
       });
 
-      // listen on progress to update UI TODO
+      // listen on progress to update UI
       progressSubscription = manager.progress$.subscribe(
-        (_: RxFileUploadProgressData) => console.log(_),
+        (_: RxFileUploadProgressData) => updateProgressUI(_),
       );
 
       // upload file
-      uploadSubscription = manager
-        .uploadFile<any>(files[0], {
-          fieldName: 'myAdditionalData',
-          data: { test: 'one test value' },
-        })
-        .subscribe({
-          next: (_) => {
-            // update file path UI if exists inside the response TODO
-            console.log(_);
+      uploadSubscription = manager.uploadFile<any>(files[0]).subscribe({
+        next: (_: RxFileUploadResponse<any>) => {
+          // delete previous subscription to memory free
+          uploadSubscription.unsubscribe();
+          progressSubscription.unsubscribe();
 
-            // delete previous subscription to memory free
-            uploadSubscription.unsubscribe();
-            progressSubscription.unsubscribe();
+          // update file path UI if it exists inside the response
+          updateFilePathUI(_);
 
-            // enable button with timeout to avoid flickering
-            setTimeout(() => (selectFilesButton.disabled = false), 500);
-          },
-          error: (e) => console.error(e.metadata),
-        });
+          // enable button with timeout to avoid flickering
+          setTimeout(() => (selectFilesButton.disabled = false), 500);
+        },
+        error: (e) => console.error(e.metadata),
+      });
     });
   });
 };
 
 /**
+ * Function to build file list html
+ */
+const buildFileListHtml = (): void => {
+  // check if we have files in the list
+  if (files.length === 0) {
+    // set default preview list
+    previewContainer.innerHTML = defaultFilesListContent;
+    fileDetailSelectors = [];
+  } else {
+    //set detail list
+    previewContainer.innerHTML = files
+      .map((file: File, index: number) => {
+        return fileUploadDetailTpl
+          .replace('{{filename}}', file.name)
+          .replace('{{filesize}}', formatFileSizeDisplay(file.size))
+          .replace(/{{fileIndex}}/gm, `${index}`);
+      })
+      .join('');
+    // build selectors list
+    files.forEach((_, index) => {
+      fileDetailSelectors.push({
+        progressValue: document.querySelector(`#progress-value_${index}`),
+        progressValueText: document.querySelector(
+          `#progress-value-text_${index}`,
+        ),
+        fileDetailPath: document.querySelector(
+          `#file-upload-detail-path_${index}`,
+        ),
+        filePath: document.querySelector(`#file-upload-path_${index}`),
+      });
+    });
+  }
+};
+
+/**
+ * Function to update UI with progress data
+ *
+ * @param {RxFileUploadProgressData} data data to update UI
+ */
+const updateProgressUI = (data: RxFileUploadProgressData): void => {
+  // get all elements to update
+  const selectors =
+    fileDetailSelectors[
+      typeof data.fileIndex === 'number' ? data.fileIndex : 0
+    ];
+  // update content
+  selectors.progressValue.classList.add('progress-value-content');
+  selectors.progressValue.style.width = selectors.progressValueText.innerText = `${data.progress}%`;
+};
+
+/**
+ * Function to update UI with uploaded data
+ *
+ * @param {RxFileUploadResponse<any>} data response from the API may contain filePath and fileIndex if coming from our API
+ */
+const updateFilePathUI = (data: RxFileUploadResponse<any>): void => {
+  // check if the response comes from our API
+  if (typeof data.response.filePath === 'string') {
+    // get all elements to update
+    const selectors =
+      fileDetailSelectors[
+        typeof data.fileIndex === 'number' ? data.fileIndex : 0
+      ];
+    // update content
+    selectors.filePath.innerText = data.response.filePath;
+    selectors.fileDetailPath.classList.remove('display-none');
+  }
+};
+
+/**
  * Helper to format file size in readable string
  */
-const formatFileSizeDisplay = (size: number) => {
+const formatFileSizeDisplay = (size: number): string => {
   if (size < 1024) {
     return `${size} bytes`;
   } else if (size >= 1024 && size < 1048576) {
