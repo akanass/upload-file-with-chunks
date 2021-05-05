@@ -3,10 +3,12 @@ import { defaultFilesListContent, fileUploadDetailTpl } from './_templates';
 import {
   addChecksumInput,
   fileEndpointInput,
+  fileWithChunksEndpointInput,
   previewContainer,
   selectFilesButton,
   selectFilesInput,
   uploadFilesButton,
+  useChunkInput,
 } from './_selectors';
 import {
   RxFileUploadProgressData,
@@ -118,8 +120,11 @@ const uploadFilesButtonProcess = (): void => {
     import('./lib/rx-file-upload').then(({ rxFileUpload }) => {
       // create new instance of RxFileUpload
       const manager = rxFileUpload({
-        url: fileEndpointInput.value,
-        addCheckSum: addChecksumInput.checked,
+        url: !!useChunkInput.checked
+          ? fileWithChunksEndpointInput.value
+          : fileEndpointInput.value,
+        addChecksum: addChecksumInput.checked,
+        useChunks: useChunkInput.checked,
       });
 
       // listen on progress to update UI
@@ -128,7 +133,7 @@ const uploadFilesButtonProcess = (): void => {
       );
 
       // upload file
-      uploadSubscription = manager.uploadFile<any>(files[0]).subscribe({
+      uploadSubscription = manager.upload<any>(files).subscribe({
         next: (_: RxFileUploadResponse<any>) => {
           // delete previous subscription to memory free
           uploadSubscription.unsubscribe();

@@ -1,5 +1,5 @@
 import { ajax, AjaxConfig, AjaxResponse } from 'rxjs/ajax';
-import { from, merge, Observable, of, Subject } from 'rxjs';
+import { from, merge, Observable, of, Subject, throwError } from 'rxjs';
 import {
   distinctUntilChanged,
   filter,
@@ -24,7 +24,7 @@ export type RxFileUploadConfig = Omit<
   | 'progressSubscriber'
   | 'includeUploadProgress'
   | 'includeDownloadProgress'
-> & { chunkSize?: number; addCheckSum?: boolean };
+> & { chunkSize?: number; addChecksum?: boolean; useChunks?: boolean };
 
 /**
  * Chunk size type definition
@@ -112,7 +112,9 @@ export class RxFileUpload {
   // private property to store chunk size
   private readonly _chunkSize: number;
   // private property to store flag to know if checksum is disable or not
-  private readonly _addCheckSum: boolean;
+  private readonly _addChecksum: boolean;
+  // private property to store flag to know if chunks split is disable or not
+  private readonly _useChunks: boolean;
   // private property to store progress Subject
   private readonly _progress$: Subject<RxFileUploadProgressData>;
 
@@ -143,16 +145,29 @@ export class RxFileUpload {
     }
 
     // check if flag is set in the config
-    if (typeof config.addCheckSum !== 'undefined') {
+    if (typeof config.addChecksum !== 'undefined') {
       // set flag to know if checksum is disable or not
-      if (typeof config.addCheckSum === 'boolean')
-        this._addCheckSum = config.addCheckSum;
-      else this._addCheckSum = false;
+      if (typeof config.addChecksum === 'boolean')
+        this._addChecksum = config.addChecksum;
+      else this._addChecksum = false;
       // delete flag in config
-      delete config.addCheckSum;
+      delete config.addChecksum;
     } else {
       // set default value to false
-      this._addCheckSum = false;
+      this._addChecksum = false;
+    }
+
+    // check if flag is set in the config
+    if (typeof config.useChunks !== 'undefined') {
+      // set flag to know if checksum is disable or not
+      if (typeof config.useChunks === 'boolean')
+        this._useChunks = config.useChunks;
+      else this._useChunks = false;
+      // delete flag in config
+      delete config.useChunks;
+    } else {
+      // set default value to false
+      this._useChunks = false;
     }
 
     // set ajax configuration property
@@ -173,12 +188,56 @@ export class RxFileUpload {
   }
 
   /**
-   * Function to upload one file to the server with optional additional data
+   * Function to upload one or multiple files to the server with optional additional data
    *
-   * @param {File} file the uploaded file
+   * @param {File|File[]} oneFileOrMultipleFiles the file(s) to upload to the server
    * @param {RxFileUploadAdditionalFormData} additionalFormData sent to the server
    */
-  public uploadFile = <T>(
+  public upload = <T>(
+    oneFileOrMultipleFiles: File | File[],
+    additionalFormData?: RxFileUploadAdditionalFormData,
+  ): Observable<RxFileUploadResponse<T>> =>
+    of([].concat(oneFileOrMultipleFiles)).pipe(
+      mergeMap((files: File[]) =>
+        merge(
+          // no file to upload throw error
+          of(files.length).pipe(
+            filter((length: number) => length === 0),
+            mergeMap(() =>
+              throwError(
+                () =>
+                  new Error('You must provide at least one file to upload.'),
+              ),
+            ),
+          ),
+          // upload only one file
+          of(files.length).pipe(
+            filter((length: number) => length === 1),
+            mergeMap(() => this._uploadFile<T>(files[0], additionalFormData)),
+          ),
+          // upload multiple files TODO
+          of(files.length).pipe(
+            filter((length: number) => length > 1),
+            mergeMap(() =>
+              throwError(
+                () =>
+                  new Error(
+                    'Multiple files uploading is not supported at the moment.',
+                  ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+  /**
+   * Function to upload one file to the server with optional additional data
+   *
+   * @param {File} file the file to upload to the server
+   * @param {RxFileUploadAdditionalFormData} additionalFormData sent to the server
+   */
+  private _uploadFile = <T>(
     file: File,
     additionalFormData?: RxFileUploadAdditionalFormData,
   ): Observable<RxFileUploadResponse<T>> =>
@@ -225,14 +284,37 @@ export class RxFileUpload {
   /**
    * Helper to build formData body for one file upload
    *
-   * @param {File} file the uploaded file
+   * @param {File} file the file to upload to the server
    * @param {RxFileUploadAdditionalFormData} additionalFormData sent to the server
    */
   private _fileBodyData = (
     file: File,
     additionalFormData?: RxFileUploadAdditionalFormData,
   ): Observable<FormData> =>
-    of(of(this._addCheckSum)).pipe(
+    this._fileBody(file, additionalFormData).pipe(
+      map((data: any) => ({
+        formData: new FormData(),
+        data,
+      })),
+      map((_: { formData: FormData; data: any }) => {
+        Object.keys(_.data).forEach((key: string) =>
+          _.formData.append(key, _.data[key]),
+        );
+        return _.formData;
+      }),
+    );
+
+  /**
+   * Helper to build body for one file upload
+   *
+   * @param {File} file the file to upload to the server
+   * @param {RxFileUploadAdditionalFormData} additionalFormData sent to the server
+   */
+  private _fileBody = (
+    file: File,
+    additionalFormData?: RxFileUploadAdditionalFormData,
+  ): Observable<any> =>
+    of(of(this._addChecksum)).pipe(
       mergeMap((obs: Observable<boolean>) =>
         merge(
           obs.pipe(
@@ -271,25 +353,13 @@ export class RxFileUpload {
         typeof additionalFormData.fieldName === 'string' &&
         ['string', 'object'].includes(typeof additionalFormData.data)
           ? {
-              formData: new FormData(),
-              data: {
-                ...data,
-                [additionalFormData.fieldName]: this._serialize(
-                  additionalFormData.data,
-                ),
-              },
+              ...data,
+              [additionalFormData.fieldName]: this._serialize(
+                additionalFormData.data,
+              ),
             }
-          : {
-              formData: new FormData(),
-              data,
-            },
+          : data,
       ),
-      map((_: { formData: FormData; data: any }) => {
-        Object.keys(_.data).forEach((key: string) =>
-          _.formData.append(key, _.data[key]),
-        );
-        return _.formData;
-      }),
     );
 
   /**
@@ -313,7 +383,7 @@ export class RxFileUpload {
    * @private
    */
   private _setAjaxConfig = (
-    config: Omit<RxFileUploadConfig, 'chunkSize' | 'addCheckSum'>,
+    config: Omit<RxFileUploadConfig, 'chunkSize' | 'addChecksum' | 'useChunks'>,
   ): void => {
     // check if config's properties are allowed -> JS verification when not using typings
     Object.keys(config).forEach((_) => {
