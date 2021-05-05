@@ -24,7 +24,7 @@ export type RxFileUploadConfig = Omit<
   | 'progressSubscriber'
   | 'includeUploadProgress'
   | 'includeDownloadProgress'
-> & { chunkSize?: number; maxConnections?: number };
+> & { chunkSize?: number; maxConnections?: number; addCheckSum?: boolean };
 
 /**
  * Chunk size type definition
@@ -118,6 +118,8 @@ export class RxFileUpload {
   private readonly _chunkSize: number;
   // private property to store simulate max connections
   private readonly _maxConnections: number;
+  // private property to store flag to know if checksum is disable or not
+  private readonly _addCheckSum: boolean;
   // private property to store progress Subject
   private readonly _progress$: Subject<RxFileUploadProgressData>;
 
@@ -155,6 +157,19 @@ export class RxFileUpload {
       this._maxConnections = config.maxConnections;
       // delete max connections in config
       delete config.maxConnections;
+    }
+
+    // check if flag is set in the config
+    if (typeof config.addCheckSum !== 'undefined') {
+      // set flag to know if checksum is disable or not
+      if (typeof config.addCheckSum === 'boolean')
+        this._addCheckSum = config.addCheckSum;
+      else this._addCheckSum = false;
+      // delete flag in config
+      delete config.addCheckSum;
+    } else {
+      // set default value to false
+      this._addCheckSum = false;
     }
 
     // set ajax configuration property
@@ -234,17 +249,40 @@ export class RxFileUpload {
     file: File,
     additionalFormData?: RxFileUploadAdditionalFormData,
   ): Observable<FormData> =>
-    this._calculateCheckSum(file).pipe(
-      map((checksum: string) => ({
-        fileData: this._serialize({
-          name: file.name,
-          size: file.size,
-          lastModified: file.lastModified,
-          type: file.type,
-          sha256Checksum: checksum,
-        }),
-        file,
-      })),
+    of(of(this._addCheckSum)).pipe(
+      mergeMap((obs: Observable<boolean>) =>
+        merge(
+          obs.pipe(
+            filter((addChecksum: boolean) => !!addChecksum),
+            mergeMap(() =>
+              this._calculateCheckSum(file).pipe(
+                map((checksum: string) => ({
+                  fileData: this._serialize({
+                    name: file.name,
+                    size: file.size,
+                    lastModified: file.lastModified,
+                    type: file.type,
+                    sha256Checksum: checksum,
+                  }),
+                  file,
+                })),
+              ),
+            ),
+          ),
+          obs.pipe(
+            filter((addChecksum: boolean) => !addChecksum),
+            map(() => ({
+              fileData: this._serialize({
+                name: file.name,
+                size: file.size,
+                lastModified: file.lastModified,
+                type: file.type,
+              }),
+              file,
+            })),
+          ),
+        ),
+      ),
       map((data: { fileData: string; file: File }) =>
         typeof additionalFormData !== 'undefined' &&
         typeof additionalFormData.fieldName === 'string' &&
