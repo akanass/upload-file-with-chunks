@@ -27,14 +27,6 @@ export type RxFileUploadConfig = Omit<
 > & { chunkSize?: number; addChecksum?: boolean; useChunks?: boolean };
 
 /**
- * Chunk size type definition
- */
-export type RxFileUploadChunkSize = {
-  readonly startByte: number;
-  readonly endByte: number;
-};
-
-/**
  * Additional formData type definition
  */
 export type RxFileUploadAdditionalFormData = {
@@ -55,39 +47,48 @@ export type RxFileUploadProgressData = {
  */
 export type RxFileUploadResponse<T> = {
   readonly status: number;
-  readonly headers: Record<string, string>;
+  readonly responseHeaders: Record<string, string>;
   readonly response: T;
   readonly fileIndex?: number;
 };
 
 /**
- * List of AjaxConfig allowed properties to be sure to have the right ones when using JS and not TS
- * because JS doesn't use typings so you can pass what you want inside and if one property isn't allowed
- * we will throw an error
+ * Chunk size type definition
+ *
+ * @internal
  */
-const allowedConfigProperties: string[] = [
-  'url',
-  'headers',
-  'timeout',
-  'user',
-  'password',
-  'crossDomain',
-  'withCredentials',
-  'xsrfCookieName',
-  'xsrfHeaderName',
-  'responseType',
-  'queryParams',
-];
+type RxFileUploadChunkSize = {
+  readonly startByte: number;
+  readonly endByte: number;
+};
 
 /**
- * Variable to store 1024 bytes / 1 Kb
+ * Chunk sequence type definition
  */
-const oneKb = 1024;
+type RxFileUploadChunkSequenceData = {
+  readonly sequence: number;
+  readonly totalChunks: number;
+};
 
 /**
- * Default chunk size value to 1 048 576 bytes / 1024 Kb / 1 Mb
+ * Chunk data type definition
+ *
+ * @internal
  */
-const defaultChunkSize: number = oneKb * oneKb;
+type RxFileUploadChunkData = {
+  readonly file: File;
+} & RxFileUploadChunkSize &
+  RxFileUploadChunkSequenceData;
+
+/**
+ * Body form data type definition
+ *
+ * @internal
+ */
+type RxFileUploadBodyData = {
+  readonly formData: FormData;
+  readonly data: any;
+};
 
 /**
  * Helper to check if we are in the browser and all required elements are available
@@ -103,6 +104,26 @@ export const supportRxFileUpload = (): boolean =>
  * This class will do the process to upload file with chunks
  */
 export class RxFileUpload {
+  /**
+   * List of AjaxConfig allowed properties to be sure to have the right ones when using JS and not TS
+   * because JS doesn't use typings so you can pass what you want inside and if one property isn't allowed
+   * we will throw an error
+   */
+  private _allowedConfigProperties: string[] = [
+    'url',
+    'headers',
+    'timeout',
+    'user',
+    'password',
+    'crossDomain',
+    'withCredentials',
+    'xsrfCookieName',
+    'xsrfHeaderName',
+    'responseType',
+    'queryParams',
+  ];
+  // private property to store 1024 bytes / 1 Kb
+  private _oneKb = 1024;
   // private property to store xhr configuration
   private _config: AjaxConfig;
   // private property to store ajax function
@@ -121,7 +142,7 @@ export class RxFileUpload {
   /**
    * Class constructor
    *
-   * @param {RxFileUploadConfig} config object to configure the chunks upload process
+   * @param {RxFileUploadConfig} config object to configure the upload process
    */
   constructor(config: RxFileUploadConfig) {
     // check if functionality is available
@@ -141,7 +162,7 @@ export class RxFileUpload {
       delete config.chunkSize;
     } else {
       // set default chunk size to 1 Mb
-      this._chunkSize = defaultChunkSize;
+      this._chunkSize = this._oneKb * this._oneKb;
     }
 
     // check if flag is set in the config
@@ -232,7 +253,7 @@ export class RxFileUpload {
     );
 
   /**
-   * Function to upload one file to the server with optional additional data
+   * Function to upload one file, with or without chunk, to the server with optional additional data
    *
    * @param {File} file the file to upload to the server
    * @param {RxFileUploadAdditionalFormData} additionalFormData sent to the server
@@ -241,45 +262,150 @@ export class RxFileUpload {
     file: File,
     additionalFormData?: RxFileUploadAdditionalFormData,
   ): Observable<RxFileUploadResponse<T>> =>
-    this._fileBodyData(file, additionalFormData).pipe(
-      mergeMap((f: FormData) =>
-        this._ajax<T>({ ...this._config, body: f }).pipe(
-          mergeMap((ajaxResponse: AjaxResponse<T>) =>
-            merge(
-              of(ajaxResponse.type).pipe(
-                filter((type) => type === 'upload_progress'),
-                tap(() =>
-                  this._progress$.next({
-                    progress: Math.round(
-                      (ajaxResponse.loaded * 100) / ajaxResponse.total,
-                    ),
-                  }),
-                ),
-                map(() => ajaxResponse),
-              ),
-              of(ajaxResponse.type).pipe(
-                filter((type) => type === 'upload_load'),
-                tap(() => this._progress$.complete()),
-                map(() => ajaxResponse),
-              ),
-              of(ajaxResponse.type).pipe(
-                filter((type) => type === 'download_load'),
-                map(() => ajaxResponse),
-              ),
+    of(of(this._useChunks)).pipe(
+      mergeMap((obs: Observable<boolean>) =>
+        merge(
+          obs.pipe(
+            filter((useChunks: boolean) => !!useChunks),
+            mergeMap(() =>
+              this._sendFileWithChunks<T>(file, additionalFormData),
             ),
           ),
-          filter(
-            (ajaxResponse: AjaxResponse<T>) =>
-              ajaxResponse.type === 'download_load',
+          obs.pipe(
+            filter((useChunks: boolean) => !useChunks),
+            mergeMap(() => this._sendFile<T>(file, additionalFormData)),
           ),
-          map((ajaxResponse: AjaxResponse<T>) => ({
-            status: ajaxResponse.status,
-            response: ajaxResponse.response,
-            headers: ajaxResponse.responseHeaders,
-          })),
         ),
       ),
     );
+
+  /**
+   * Function to upload one file without chunk to the server with optional additional data
+   *
+   * @param {File} file the file to upload to the server
+   * @param {RxFileUploadAdditionalFormData} additionalFormData sent to the server
+   */
+  private _sendFile = <T>(
+    file: File,
+    additionalFormData?: RxFileUploadAdditionalFormData,
+  ): Observable<RxFileUploadResponse<T>> =>
+    this._fileBodyData(file, additionalFormData).pipe(
+      mergeMap((f: FormData) => this._makeAjaxCall<T>(f)),
+    );
+
+  /**
+   * Function to upload one file with chunks to the server with optional additional data
+   *
+   * @param {File} file the file to upload to the server
+   * @param {RxFileUploadAdditionalFormData} additionalFormData sent to the server
+   */
+  private _sendFileWithChunks = <T>(
+    file: File,
+    additionalFormData?: RxFileUploadAdditionalFormData,
+  ): Observable<RxFileUploadResponse<T>> => {
+    // TODO implements chunks process
+    return throwError(
+      () => new Error('Uploading files with chunks is not yet supported.'),
+    );
+  };
+
+  /**
+   * Function to make the AJAX call to the server
+   * @param {FormData} f the form data object to send to the server
+   * @param {RxFileUploadChunkSequenceData} chunk data to calculate real progress if it's a chunk
+   * @param {number} fileIndex the index of the file for a multiple upload
+   */
+  private _makeAjaxCall = <T>(
+    f: FormData,
+    chunk?: RxFileUploadChunkSequenceData,
+    fileIndex?: number,
+  ): Observable<RxFileUploadResponse<T>> =>
+    this._ajax<T>({ ...this._config, body: f }).pipe(
+      mergeMap((ajaxResponse: AjaxResponse<T>) =>
+        merge(
+          of(ajaxResponse.type).pipe(
+            filter((type) => type === 'upload_progress'),
+            map(() => ({
+              progress: this._calculateProgress(
+                Math.round((ajaxResponse.loaded * 100) / ajaxResponse.total),
+                chunk,
+              ),
+            })),
+            mergeMap((progress: RxFileUploadProgressData) =>
+              merge(
+                of(fileIndex).pipe(
+                  filter((_: number) => typeof _ === 'number'),
+                  map(() => ({ ...progress, fileIndex })),
+                ),
+                of(fileIndex).pipe(
+                  filter((_: number) => typeof _ !== 'number'),
+                  map(() => progress),
+                ),
+              ),
+            ),
+            tap((progress: RxFileUploadProgressData) =>
+              this._progress$.next(progress),
+            ),
+            map(() => ajaxResponse),
+          ),
+          of(ajaxResponse.type).pipe(
+            filter((type) => type === 'upload_load'),
+            tap(() => this._progress$.complete()),
+            map(() => ajaxResponse),
+          ),
+          of(ajaxResponse.type).pipe(
+            filter((type) => type === 'download_load'),
+            map(() => ajaxResponse),
+          ),
+        ),
+      ),
+      filter(
+        (ajaxResponse: AjaxResponse<T>) =>
+          ajaxResponse.type === 'download_load',
+      ),
+      map((ajaxResponse: AjaxResponse<T>) => ({
+        status: ajaxResponse.status,
+        response: ajaxResponse.response,
+        responseHeaders: Object.keys(ajaxResponse.responseHeaders)
+          .filter((key: string) => key !== '')
+          .reduce(
+            (acc, curr) => ({
+              ...acc,
+              [curr]: ajaxResponse.responseHeaders[curr],
+            }),
+            {},
+          ),
+      })),
+      mergeMap((response: RxFileUploadResponse<T>) =>
+        merge(
+          of(fileIndex).pipe(
+            filter((_: number) => typeof _ === 'number'),
+            map(() => ({ ...response, fileIndex })),
+          ),
+          of(fileIndex).pipe(
+            filter((_: number) => typeof _ !== 'number'),
+            map(() => response),
+          ),
+        ),
+      ),
+    );
+
+  /**
+   * Helper to calculate current progress value
+   *
+   * @param {number} progress the current ajax response progress value
+   * @param {RxFileUploadChunkSequenceData} chunk data to calculate real progress if it's a chunk
+   */
+  private _calculateProgress = (
+    progress: number,
+    chunk?: RxFileUploadChunkSequenceData,
+  ): number =>
+    typeof chunk === 'object'
+      ? Math.round(
+          progress / chunk.totalChunks +
+            (chunk.sequence - 1) * (100 / chunk.totalChunks),
+        )
+      : progress;
 
   /**
    * Helper to build formData body for one file upload
@@ -291,12 +417,12 @@ export class RxFileUpload {
     file: File,
     additionalFormData?: RxFileUploadAdditionalFormData,
   ): Observable<FormData> =>
-    this._fileBody(file, additionalFormData).pipe(
+    this._fileDataWithAdditionalData(file, additionalFormData).pipe(
       map((data: any) => ({
         formData: new FormData(),
-        data,
+        data: { ...data, file },
       })),
-      map((_: { formData: FormData; data: any }) => {
+      map((_: RxFileUploadBodyData) => {
         Object.keys(_.data).forEach((key: string) =>
           _.formData.append(key, _.data[key]),
         );
@@ -305,12 +431,12 @@ export class RxFileUpload {
     );
 
   /**
-   * Helper to build body for one file upload
+   * Helper to build fileData and additionalData values to insert inside FormData
    *
    * @param {File} file the file to upload to the server
    * @param {RxFileUploadAdditionalFormData} additionalFormData sent to the server
    */
-  private _fileBody = (
+  private _fileDataWithAdditionalData = (
     file: File,
     additionalFormData?: RxFileUploadAdditionalFormData,
   ): Observable<any> =>
@@ -329,7 +455,6 @@ export class RxFileUpload {
                     type: file.type,
                     sha256Checksum: checksum,
                   }),
-                  file,
                 })),
               ),
             ),
@@ -343,12 +468,11 @@ export class RxFileUpload {
                 lastModified: file.lastModified,
                 type: file.type,
               }),
-              file,
             })),
           ),
         ),
       ),
-      map((data: { fileData: string; file: File }) =>
+      map((data: { fileData: string }) =>
         typeof additionalFormData !== 'undefined' &&
         typeof additionalFormData.fieldName === 'string' &&
         ['string', 'object'].includes(typeof additionalFormData.data)
@@ -368,7 +492,7 @@ export class RxFileUpload {
    * @param {number} chunkSize the size of one chunk
    */
   private _checkChunkSize = (chunkSize: number): void => {
-    if (typeof chunkSize !== 'number' || chunkSize % oneKb !== 0) {
+    if (typeof chunkSize !== 'number' || chunkSize % this._oneKb !== 0) {
       throw new Error(
         'The size of a chunk must be a multiple of 1024 bytes !!!',
       );
@@ -387,7 +511,7 @@ export class RxFileUpload {
   ): void => {
     // check if config's properties are allowed -> JS verification when not using typings
     Object.keys(config).forEach((_) => {
-      if (!allowedConfigProperties.includes(_))
+      if (!this._allowedConfigProperties.includes(_))
         throw new Error(
           `"${_}" isn't a valid property of "RxFileUploadConfig"`,
         );

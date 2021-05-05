@@ -129,12 +129,16 @@ const uploadFilesButtonProcess = (): void => {
 
       // listen on progress to update UI
       progressSubscription = manager.progress$.subscribe(
-        (_: RxFileUploadProgressData) => updateProgressUI(_),
+        (_: RxFileUploadProgressData) => {
+          console.log(_); // TODO delete when library totally finished
+          updateProgressUI(_);
+        },
       );
 
       // upload file
       uploadSubscription = manager.upload<any>(files).subscribe({
         next: (_: RxFileUploadResponse<any>) => {
+          console.log(_); // TODO delete when library totally finished
           // delete previous subscription to memory free
           uploadSubscription.unsubscribe();
           progressSubscription.unsubscribe();

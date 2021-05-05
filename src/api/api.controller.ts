@@ -20,4 +20,12 @@ export class ApiController {
   uploadFile(@Req() req): Observable<any> {
     return this._apiService.uploadFile(req);
   }
+
+  /**
+   * Function to handle the upload of a chunk file
+   */
+  @Post('upload/chunk')
+  uploadChunkFile(@Req() req): Observable<any> {
+    return this._apiService.uploadFile(req, true);
+  }
 }
