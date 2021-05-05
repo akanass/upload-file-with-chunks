@@ -24,7 +24,7 @@ export type RxFileUploadConfig = Omit<
   | 'progressSubscriber'
   | 'includeUploadProgress'
   | 'includeDownloadProgress'
-> & { chunkSize?: number; maxConnections?: number; addCheckSum?: boolean };
+> & { chunkSize?: number; addCheckSum?: boolean };
 
 /**
  * Chunk size type definition
@@ -90,11 +90,6 @@ const oneKb = 1024;
 const defaultChunkSize: number = oneKb * oneKb;
 
 /**
- * Default max connections
- */
-const defaultMaxConnections = 3;
-
-/**
  * Helper to check if we are in the browser and all required elements are available
  */
 export const supportRxFileUpload = (): boolean =>
@@ -116,8 +111,6 @@ export class RxFileUpload {
   ) => Observable<AjaxResponse<T>>;
   // private property to store chunk size
   private readonly _chunkSize: number;
-  // private property to store simulate max connections
-  private readonly _maxConnections: number;
   // private property to store flag to know if checksum is disable or not
   private readonly _addCheckSum: boolean;
   // private property to store progress Subject
@@ -147,16 +140,6 @@ export class RxFileUpload {
     } else {
       // set default chunk size to 1 Mb
       this._chunkSize = defaultChunkSize;
-    }
-
-    // set max connections property
-    if (!!config.maxConnections) {
-      // check max connections before storing it
-      this._checkMaxConnections(config.maxConnections);
-      // set max connections
-      this._maxConnections = config.maxConnections;
-      // delete max connections in config
-      delete config.maxConnections;
     }
 
     // check if flag is set in the config
@@ -323,22 +306,6 @@ export class RxFileUpload {
   };
 
   /**
-   * Function to check if max connections is good value
-   *
-   * @param {number} maxConnections the maximum simultaneous connections
-   */
-  private _checkMaxConnections = (maxConnections: number): void => {
-    if (
-      typeof maxConnections !== 'number' ||
-      maxConnections < defaultMaxConnections
-    ) {
-      throw new Error(
-        `The number of maximum simultaneous connections must be a positive integer greater than or equal to ${defaultMaxConnections} !!!`,
-      );
-    }
-  };
-
-  /**
    * Helper to check the validity of the config object before setting it in instance property
    *
    * @param {RxFileUploadConfig} config object to configure the xhr request
@@ -346,7 +313,7 @@ export class RxFileUpload {
    * @private
    */
   private _setAjaxConfig = (
-    config: Omit<RxFileUploadConfig, 'chunkSize' | 'maxConnections'>,
+    config: Omit<RxFileUploadConfig, 'chunkSize' | 'addCheckSum'>,
   ): void => {
     // check if config's properties are allowed -> JS verification when not using typings
     Object.keys(config).forEach((_) => {
