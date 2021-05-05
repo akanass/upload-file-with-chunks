@@ -138,7 +138,7 @@ const uploadFilesButtonProcess = (): void => {
           // enable button with timeout to avoid flickering
           setTimeout(() => (selectFilesButton.disabled = false), 500);
         },
-        error: (e) => console.error(e.metadata),
+        error: (e) => console.error(e.message),
       });
     });
   });
