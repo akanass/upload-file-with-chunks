@@ -131,22 +131,19 @@ const uploadFilesButtonProcess = (): void => {
 
       // listen on progress to update UI
       progressSubscription = manager.progress$.subscribe({
-        next: (_: RxFileUploadProgressData) => updateProgressUI(_),
+        next: (_: RxFileUploadProgressData) => {
+          console.log(_); // TODO delete when library totally finished
+          updateProgressUI(_);
+        },
+        complete: () => console.log('PROGRESS COMPLETE'), // TODO delete when library totally finished
       });
 
       // upload file
       uploadSubscription = manager.upload<any>(files).subscribe({
         next: (_: RxFileUploadResponse<any>) => {
           console.log(_); // TODO delete when library totally finished
-          // delete previous subscription to memory free
-          uploadSubscription.unsubscribe();
-          progressSubscription.unsubscribe();
-
           // update file path UI if it exists inside the response
-          updateFilePathUI(_);
-
-          // enable button with timeout to avoid flickering
-          setTimeout(() => (selectFilesButton.disabled = false), 500);
+          updateUI(_);
         },
         error: (e: RxFileUploadError) => {
           // display error in the console
@@ -155,6 +152,7 @@ const uploadFilesButtonProcess = (): void => {
           // enable button with timeout to avoid flickering
           setTimeout(() => (selectFilesButton.disabled = false), 500);
         },
+        complete: () => console.log('UPLOAD COMPLETE'), // TODO delete when library totally finished
       });
     });
   });
@@ -216,11 +214,16 @@ const updateProgressUI = (data: RxFileUploadProgressData): void => {
 /**
  * Function to update UI with uploaded data
  *
- * @param {RxFileUploadResponse<any>} data response from the API may contain filePath and fileIndex if coming from our API
+ * @param {RxFileUploadResponse<any>} data response from the API may contain filePath, chunkData and fileIndex if coming from our API
  */
-const updateFilePathUI = (data: RxFileUploadResponse<any>): void => {
+const updateUI = (data: RxFileUploadResponse<any>): void => {
   // check if the response comes from our API and with a known response to update the UI
-  if (typeof data.response?.filePath === 'string') {
+  if (
+    typeof data.response?.filePath === 'string' &&
+    (typeof data.response?.chunkData === 'undefined' ||
+      data.response?.chunkData?.sequence ===
+        data.response?.chunkData?.totalChunks)
+  ) {
     // get all elements to update
     const selectors =
       fileDetailSelectors[
@@ -229,6 +232,9 @@ const updateFilePathUI = (data: RxFileUploadResponse<any>): void => {
     // update content
     selectors.filePath.innerText = data.response.filePath;
     selectors.fileDetailPath.classList.remove('display-none');
+
+    // enable button with timeout to avoid flickering
+    setTimeout(() => (selectFilesButton.disabled = false), 500);
   }
 };
 

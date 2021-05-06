@@ -1,12 +1,13 @@
 import { ajax, AjaxConfig, AjaxError, AjaxResponse } from 'rxjs/ajax';
-import { concat, from, merge, Observable, of, Subject, throwError } from 'rxjs';
+import { from, merge, Observable, of, Subject, throwError } from 'rxjs';
 import {
   catchError,
+  concatMap,
+  defaultIfEmpty,
   distinctUntilChanged,
   filter,
   map,
   mergeMap,
-  takeLast,
   tap,
   toArray,
 } from 'rxjs/operators';
@@ -352,16 +353,10 @@ export class RxFileUpload {
     fileIndex?: number,
   ): Observable<RxFileUploadResponse<T>> =>
     this._chunkBodyData(file, additionalFormData).pipe(
-      map((formData: RxFileUploadChunkFormData[]): Observable<
-        RxFileUploadResponse<T>
-      >[] =>
-        formData.map(
-          (f: RxFileUploadChunkFormData): Observable<RxFileUploadResponse<T>> =>
-            this._makeAjaxCall<T>(f.formData, f.chunkSequenceData, fileIndex),
-        ),
+      concatMap(
+        (f: RxFileUploadChunkFormData): Observable<RxFileUploadResponse<T>> =>
+          this._makeAjaxCall<T>(f.formData, f.chunkSequenceData, fileIndex),
       ),
-      mergeMap((obs: Observable<RxFileUploadResponse<T>>[]) => concat(...obs)),
-      takeLast(1),
     );
 
   /**
@@ -405,25 +400,31 @@ export class RxFileUpload {
                 (
                   progress: RxFileUploadProgressData,
                 ): Observable<RxFileUploadProgressData> =>
-                  merge(
-                    of(fileIndex).pipe(
-                      filter((_: number): boolean => typeof _ === 'number'),
-                      map(
-                        (): RxFileUploadProgressData => ({
-                          ...progress,
-                          fileIndex,
-                        }),
-                      ),
+                  of(fileIndex).pipe(
+                    filter((_: number): boolean => typeof _ === 'number'),
+                    map(
+                      (): RxFileUploadProgressData => ({
+                        ...progress,
+                        fileIndex,
+                      }),
                     ),
-                    of(fileIndex).pipe(
-                      filter((_: number): boolean => typeof _ !== 'number'),
-                      map((): RxFileUploadProgressData => progress),
-                    ),
+                    defaultIfEmpty(progress),
                   ),
               ),
               tap((progress: RxFileUploadProgressData): void =>
                 this._progress$.next(progress),
               ),
+              map((): AjaxResponse<T> => ajaxResponse),
+            ),
+            // final progress answer
+            of(ajaxResponse.type).pipe(
+              filter((type): boolean => type === 'upload_load'),
+              filter(
+                () =>
+                  typeof chunk === 'undefined' ||
+                  chunk.sequence === chunk.totalChunks,
+              ),
+              tap(() => this._progress$.complete()),
               map((): AjaxResponse<T> => ajaxResponse),
             ),
             // final answer
@@ -459,15 +460,10 @@ export class RxFileUpload {
         (
           response: RxFileUploadResponse<T>,
         ): Observable<RxFileUploadResponse<T>> =>
-          merge(
-            of(fileIndex).pipe(
-              filter((_: number): boolean => typeof _ === 'number'),
-              map((): RxFileUploadResponse<T> => ({ ...response, fileIndex })),
-            ),
-            of(fileIndex).pipe(
-              filter((_: number): boolean => typeof _ !== 'number'),
-              map((): RxFileUploadResponse<T> => response),
-            ),
+          of(fileIndex).pipe(
+            filter((_: number): boolean => typeof _ === 'number'),
+            map((): RxFileUploadResponse<T> => ({ ...response, fileIndex })),
+            defaultIfEmpty(response),
           ),
       ),
     );
@@ -529,35 +525,30 @@ export class RxFileUpload {
     of(of(this._addChecksum)).pipe(
       mergeMap(
         (obs: Observable<boolean>): Observable<{ fileData: string }> =>
-          merge(
-            obs.pipe(
-              filter((addChecksum: boolean): boolean => !!addChecksum),
-              mergeMap(
-                (): Observable<{ fileData: string }> =>
-                  this._calculateCheckSum(file).pipe(
-                    map((checksum: string): { fileData: string } => ({
-                      fileData: this._serialize({
-                        name: file.name,
-                        size: file.size,
-                        lastModified: file.lastModified,
-                        type: file.type,
-                        sha256Checksum: checksum,
-                      }),
-                    })),
-                  ),
-              ),
+          obs.pipe(
+            filter((addChecksum: boolean): boolean => !!addChecksum),
+            mergeMap(
+              (): Observable<{ fileData: string }> =>
+                this._calculateCheckSum(file).pipe(
+                  map((checksum: string): { fileData: string } => ({
+                    fileData: this._serialize({
+                      name: file.name,
+                      size: file.size,
+                      lastModified: file.lastModified,
+                      type: file.type,
+                      sha256Checksum: checksum,
+                    }),
+                  })),
+                ),
             ),
-            obs.pipe(
-              filter((addChecksum: boolean): boolean => !addChecksum),
-              map((): { fileData: string } => ({
-                fileData: this._serialize({
-                  name: file.name,
-                  size: file.size,
-                  lastModified: file.lastModified,
-                  type: file.type,
-                }),
-              })),
-            ),
+            defaultIfEmpty({
+              fileData: this._serialize({
+                name: file.name,
+                size: file.size,
+                lastModified: file.lastModified,
+                type: file.type,
+              }),
+            }),
           ),
       ),
       map((data: { fileData: string }): any =>
@@ -583,15 +574,15 @@ export class RxFileUpload {
   private _chunkBodyData = (
     file: File,
     additionalFormData?: RxFileUploadAdditionalFormData,
-  ): Observable<RxFileUploadChunkFormData[]> =>
+  ): Observable<RxFileUploadChunkFormData> =>
     this._fileDataWithAdditionalData(file, additionalFormData).pipe(
       mergeMap(
-        (fileData: any): Observable<RxFileUploadChunkFormData[]> =>
+        (fileData: any): Observable<RxFileUploadChunkFormData> =>
           this._calculateChunkSizes(file.size).pipe(
             mergeMap(
               (
                 chunkSizes: RxFileUploadChunkSize[],
-              ): Observable<RxFileUploadChunkFormData[]> =>
+              ): Observable<RxFileUploadChunkFormData> =>
                 from(chunkSizes).pipe(
                   map(
                     (
@@ -632,7 +623,6 @@ export class RxFileUpload {
                       };
                     },
                   ),
-                  toArray(),
                 ),
             ),
           ),
