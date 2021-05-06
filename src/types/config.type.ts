@@ -24,7 +24,6 @@ export type UploadConfig = {
 
 export type UploadApiEndpointConfig = {
   readonly fileEndpoint: string;
-  readonly fileWithChunksEndpoint: string;
 };
 
 export type UploadInputConfig = {

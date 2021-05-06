@@ -21,7 +21,6 @@ export class AppController {
     };
     let uploadApiEndpointConfig: UploadApiEndpointConfig = {
       fileEndpoint: '/api/upload',
-      fileWithChunksEndpoint: '/api/upload/chunk',
     };
 
     try {
@@ -39,7 +38,6 @@ export class AppController {
           ? uploadInputConfig.multiple
           : false,
       fileEndpoint: uploadApiEndpointConfig.fileEndpoint,
-      fileWithChunksEndpoint: uploadApiEndpointConfig.fileWithChunksEndpoint,
     });
   }
 }

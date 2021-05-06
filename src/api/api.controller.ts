@@ -14,18 +14,10 @@ export class ApiController {
   constructor(private readonly _apiService: ApiService) {}
 
   /**
-   * Function to handle the upload of a full file without chunks
+   * Function to handle the upload of a file and store it on the disk
    */
   @Post('upload')
   uploadFile(@Req() req): Observable<any> {
     return this._apiService.uploadFile(req);
-  }
-
-  /**
-   * Function to handle the upload of a chunk file
-   */
-  @Post('upload/chunk')
-  uploadChunkFile(@Req() req): Observable<any> {
-    return this._apiService.uploadFile(req, true);
   }
 }

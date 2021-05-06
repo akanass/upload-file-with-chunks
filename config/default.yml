@@ -39,10 +39,9 @@ assets:
 #    or */* to allow all types
 # - multiple property is a boolean to allow multiple files selection - WARNING: NOT YET SUPPORTED
 #
-# Configuration for API endpoints
+# Configuration for API endpoint
 #
-# - fileEndpoint is the endpoint to upload one file without chunk and letting the browser to split by itself
-# - fileWithChunksEndpoint is the endpoint to upload one file with chunks created by the library
+# - fileEndpoint is the endpoint to upload file(s)
 ##
 upload:
   input:
@@ -52,4 +51,3 @@ upload:
     multiple: false
   api:
     fileEndpoint: /api/upload
-    fileWithChunksEndpoint: /api/upload/chunk

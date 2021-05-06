@@ -3,7 +3,6 @@ import { defaultFilesListContent, fileUploadDetailTpl } from './_templates';
 import {
   addChecksumInput,
   fileEndpointInput,
-  fileWithChunksEndpointInput,
   previewContainer,
   selectFilesButton,
   selectFilesInput,
@@ -121,9 +120,7 @@ const uploadFilesButtonProcess = (): void => {
     import('./lib/rx-file-upload').then(({ rxFileUpload }) => {
       // create new instance of RxFileUpload
       const manager = rxFileUpload({
-        url: !!useChunkInput.checked
-          ? fileWithChunksEndpointInput.value
-          : fileEndpointInput.value,
+        url: fileEndpointInput.value,
         addChecksum: addChecksumInput.checked,
         useChunks: useChunkInput.checked,
         chunkSize: 10485760,

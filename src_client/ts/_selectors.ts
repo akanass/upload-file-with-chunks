@@ -11,9 +11,6 @@ const previewContainer: HTMLDivElement = document.querySelector('#preview');
 const fileEndpointInput: HTMLInputElement = document.querySelector(
   '#api-file-endpoint',
 );
-const fileWithChunksEndpointInput: HTMLInputElement = document.querySelector(
-  '#api-file-with-chunks-endpoint',
-);
 const useChunkInput: HTMLInputElement = document.querySelector('#use-chunks');
 const addChecksumInput: HTMLInputElement = document.querySelector(
   '#add-checksum',
@@ -25,7 +22,6 @@ export {
   uploadFilesButton,
   previewContainer,
   fileEndpointInput,
-  fileWithChunksEndpointInput,
   useChunkInput,
   addChecksumInput,
 };
