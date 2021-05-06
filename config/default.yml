@@ -37,7 +37,7 @@ assets:
 # - accept property is
 #    an array of the **template value** from https://www.iana.org/assignments/media-types/media-types.xhtml
 #    or */* to allow all types
-# - multiple property is a boolean to allow multiple files selection
+# - multiple property is a boolean to allow multiple files selection - WARNING: NOT YET SUPPORTED
 #
 # Configuration for API endpoints
 #

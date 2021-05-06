@@ -3,7 +3,7 @@ import { from, merge, Observable, of } from 'rxjs';
 import { filter, map, mergeMap, reduce } from 'rxjs/operators';
 
 import { pipeline } from 'stream/promises';
-import { createWriteStream, createReadStream } from 'fs';
+import { createWriteStream } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -55,7 +55,10 @@ export class ApiService {
             filter((_: boolean) => !!_),
             mergeMap(() =>
               from(
-                pipeline(createReadStream(path), file, createWriteStream(path)),
+                pipeline(
+                  /*createReadStream(path),*/ file,
+                  createWriteStream(path),
+                ),
               ).pipe(map(() => path)),
             ),
           ),

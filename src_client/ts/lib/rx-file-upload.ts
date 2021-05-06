@@ -1,10 +1,12 @@
-import { ajax, AjaxConfig, AjaxResponse } from 'rxjs/ajax';
-import { from, merge, Observable, of, Subject, throwError } from 'rxjs';
+import { ajax, AjaxConfig, AjaxError, AjaxResponse } from 'rxjs/ajax';
+import { concat, from, merge, Observable, of, Subject, throwError } from 'rxjs';
 import {
+  catchError,
   distinctUntilChanged,
   filter,
   map,
   mergeMap,
+  takeLast,
   tap,
   toArray,
 } from 'rxjs/operators';
@@ -45,12 +47,26 @@ export type RxFileUploadProgressData = {
 /**
  * Upload Observable response type definition
  */
-export type RxFileUploadResponse<T> = {
-  readonly status: number;
-  readonly responseHeaders: Record<string, string>;
-  readonly response: T;
+export type RxFileUploadResponse<T> = Omit<
+  AjaxResponse<T>,
+  | 'responseType'
+  | 'loaded'
+  | 'total'
+  | 'originalEvent'
+  | 'xhr'
+  | 'request'
+  | 'type'
+> & {
   readonly fileIndex?: number;
 };
+
+/**
+ * Upload Observable error type definition
+ */
+export type RxFileUploadError = Omit<
+  AjaxError,
+  'xhr' | 'message' | 'name' | 'responseType' | 'request' | 'stack'
+>;
 
 /**
  * Chunk size type definition
@@ -71,16 +87,6 @@ type RxFileUploadChunkSequenceData = {
 };
 
 /**
- * Chunk data type definition
- *
- * @internal
- */
-type RxFileUploadChunkData = {
-  readonly file: File;
-} & RxFileUploadChunkSize &
-  RxFileUploadChunkSequenceData;
-
-/**
  * Body form data type definition
  *
  * @internal
@@ -89,6 +95,22 @@ type RxFileUploadBodyData = {
   readonly formData: FormData;
   readonly data: any;
 };
+
+/**
+ * Chunk body form data type definition
+ *
+ * @internal
+ */
+type RxFileUploadChunkBodyData = RxFileUploadBodyData & {
+  chunkSequenceData: RxFileUploadChunkSequenceData;
+};
+
+/**
+ * Chunk form data type definition
+ *
+ * @internal
+ */
+type RxFileUploadChunkFormData = Omit<RxFileUploadChunkBodyData, 'data'>;
 
 /**
  * Helper to check if we are in the browser and all required elements are available
@@ -219,36 +241,44 @@ export class RxFileUpload {
     additionalFormData?: RxFileUploadAdditionalFormData,
   ): Observable<RxFileUploadResponse<T>> =>
     of([].concat(oneFileOrMultipleFiles)).pipe(
-      mergeMap((files: File[]) =>
-        merge(
-          // no file to upload throw error
-          of(files.length).pipe(
-            filter((length: number) => length === 0),
-            mergeMap(() =>
-              throwError(
-                () =>
-                  new Error('You must provide at least one file to upload.'),
+      mergeMap(
+        (files: File[]): Observable<RxFileUploadResponse<T>> =>
+          merge(
+            // no file to upload throw error
+            of(files.length).pipe(
+              filter((length: number): boolean => length === 0),
+              mergeMap(
+                (): Observable<never> =>
+                  throwError(
+                    () =>
+                      new Error(
+                        'You must provide at least one file to upload.',
+                      ),
+                  ),
               ),
             ),
-          ),
-          // upload only one file
-          of(files.length).pipe(
-            filter((length: number) => length === 1),
-            mergeMap(() => this._uploadFile<T>(files[0], additionalFormData)),
-          ),
-          // upload multiple files TODO
-          of(files.length).pipe(
-            filter((length: number) => length > 1),
-            mergeMap(() =>
-              throwError(
-                () =>
-                  new Error(
-                    'Multiple files uploading is not supported at the moment.',
+            // upload only one file
+            of(files.length).pipe(
+              filter((length: number): boolean => length === 1),
+              mergeMap(
+                (): Observable<RxFileUploadResponse<T>> =>
+                  this._uploadFile<T>(files[0], additionalFormData),
+              ),
+            ),
+            // upload multiple files TODO
+            of(files.length).pipe(
+              filter((length: number): boolean => length > 1),
+              mergeMap(
+                (): Observable<RxFileUploadResponse<T>> =>
+                  throwError(
+                    () =>
+                      new Error(
+                        'Multiple files uploading is not supported at the moment.',
+                      ),
                   ),
               ),
             ),
           ),
-        ),
       ),
     );
 
@@ -257,25 +287,36 @@ export class RxFileUpload {
    *
    * @param {File} file the file to upload to the server
    * @param {RxFileUploadAdditionalFormData} additionalFormData sent to the server
+   * @param {number} fileIndex the index of the file for a multiple upload
    */
   private _uploadFile = <T>(
     file: File,
     additionalFormData?: RxFileUploadAdditionalFormData,
+    fileIndex?: number,
   ): Observable<RxFileUploadResponse<T>> =>
     of(of(this._useChunks)).pipe(
-      mergeMap((obs: Observable<boolean>) =>
-        merge(
-          obs.pipe(
-            filter((useChunks: boolean) => !!useChunks),
-            mergeMap(() =>
-              this._sendFileWithChunks<T>(file, additionalFormData),
+      mergeMap(
+        (obs: Observable<boolean>): Observable<RxFileUploadResponse<T>> =>
+          merge(
+            obs.pipe(
+              filter((useChunks: boolean): boolean => !!useChunks),
+              mergeMap(
+                (): Observable<RxFileUploadResponse<T>> =>
+                  this._sendFileWithChunks<T>(
+                    file,
+                    additionalFormData,
+                    fileIndex,
+                  ),
+              ),
+            ),
+            obs.pipe(
+              filter((useChunks: boolean): boolean => !useChunks),
+              mergeMap(
+                (): Observable<RxFileUploadResponse<T>> =>
+                  this._sendFile<T>(file, additionalFormData, fileIndex),
+              ),
             ),
           ),
-          obs.pipe(
-            filter((useChunks: boolean) => !useChunks),
-            mergeMap(() => this._sendFile<T>(file, additionalFormData)),
-          ),
-        ),
       ),
     );
 
@@ -284,13 +325,18 @@ export class RxFileUpload {
    *
    * @param {File} file the file to upload to the server
    * @param {RxFileUploadAdditionalFormData} additionalFormData sent to the server
+   * @param {number} fileIndex the index of the file for a multiple upload
    */
   private _sendFile = <T>(
     file: File,
     additionalFormData?: RxFileUploadAdditionalFormData,
+    fileIndex?: number,
   ): Observable<RxFileUploadResponse<T>> =>
     this._fileBodyData(file, additionalFormData).pipe(
-      mergeMap((f: FormData) => this._makeAjaxCall<T>(f)),
+      mergeMap(
+        (f: FormData): Observable<RxFileUploadResponse<T>> =>
+          this._makeAjaxCall<T>(f, undefined, fileIndex),
+      ),
     );
 
   /**
@@ -298,16 +344,25 @@ export class RxFileUpload {
    *
    * @param {File} file the file to upload to the server
    * @param {RxFileUploadAdditionalFormData} additionalFormData sent to the server
+   * @param {number} fileIndex the index of the file for a multiple upload
    */
   private _sendFileWithChunks = <T>(
     file: File,
     additionalFormData?: RxFileUploadAdditionalFormData,
-  ): Observable<RxFileUploadResponse<T>> => {
-    // TODO implements chunks process
-    return throwError(
-      () => new Error('Uploading files with chunks is not yet supported.'),
+    fileIndex?: number,
+  ): Observable<RxFileUploadResponse<T>> =>
+    this._chunkBodyData(file, additionalFormData).pipe(
+      map((formData: RxFileUploadChunkFormData[]): Observable<
+        RxFileUploadResponse<T>
+      >[] =>
+        formData.map(
+          (f: RxFileUploadChunkFormData): Observable<RxFileUploadResponse<T>> =>
+            this._makeAjaxCall<T>(f.formData, f.chunkSequenceData, fileIndex),
+        ),
+      ),
+      mergeMap((obs: Observable<RxFileUploadResponse<T>>[]) => concat(...obs)),
+      takeLast(1),
     );
-  };
 
   /**
    * Function to make the AJAX call to the server
@@ -321,72 +376,99 @@ export class RxFileUpload {
     fileIndex?: number,
   ): Observable<RxFileUploadResponse<T>> =>
     this._ajax<T>({ ...this._config, body: f }).pipe(
-      mergeMap((ajaxResponse: AjaxResponse<T>) =>
-        merge(
-          of(ajaxResponse.type).pipe(
-            filter((type) => type === 'upload_progress'),
-            map(() => ({
-              progress: this._calculateProgress(
-                Math.round((ajaxResponse.loaded * 100) / ajaxResponse.total),
-                chunk,
-              ),
-            })),
-            mergeMap((progress: RxFileUploadProgressData) =>
-              merge(
-                of(fileIndex).pipe(
-                  filter((_: number) => typeof _ === 'number'),
-                  map(() => ({ ...progress, fileIndex })),
-                ),
-                of(fileIndex).pipe(
-                  filter((_: number) => typeof _ !== 'number'),
-                  map(() => progress),
-                ),
-              ),
-            ),
-            tap((progress: RxFileUploadProgressData) =>
-              this._progress$.next(progress),
-            ),
-            map(() => ajaxResponse),
+      catchError(
+        (e: AjaxError): Observable<never> =>
+          throwError(
+            (): RxFileUploadError => ({
+              status: e.status,
+              response: e.response,
+            }),
           ),
-          of(ajaxResponse.type).pipe(
-            filter((type) => type === 'upload_load'),
-            tap(() => this._progress$.complete()),
-            map(() => ajaxResponse),
-          ),
-          of(ajaxResponse.type).pipe(
-            filter((type) => type === 'download_load'),
-            map(() => ajaxResponse),
-          ),
-        ),
       ),
+      mergeMap(
+        (ajaxResponse: AjaxResponse<T>): Observable<AjaxResponse<T>> =>
+          merge(
+            of(ajaxResponse.type).pipe(
+              // progress answer
+              filter((type): boolean => type === 'upload_progress'),
+              map(
+                (): RxFileUploadProgressData => ({
+                  progress: this._calculateProgress(
+                    Math.round(
+                      (ajaxResponse.loaded * 100) / ajaxResponse.total,
+                    ),
+                    chunk,
+                  ),
+                }),
+              ),
+              mergeMap(
+                (
+                  progress: RxFileUploadProgressData,
+                ): Observable<RxFileUploadProgressData> =>
+                  merge(
+                    of(fileIndex).pipe(
+                      filter((_: number): boolean => typeof _ === 'number'),
+                      map(
+                        (): RxFileUploadProgressData => ({
+                          ...progress,
+                          fileIndex,
+                        }),
+                      ),
+                    ),
+                    of(fileIndex).pipe(
+                      filter((_: number): boolean => typeof _ !== 'number'),
+                      map((): RxFileUploadProgressData => progress),
+                    ),
+                  ),
+              ),
+              tap((progress: RxFileUploadProgressData): void =>
+                this._progress$.next(progress),
+              ),
+              map((): AjaxResponse<T> => ajaxResponse),
+            ),
+            // final answer
+            of(ajaxResponse.type).pipe(
+              filter((type): boolean => type === 'download_load'),
+              map((): AjaxResponse<T> => ajaxResponse),
+            ),
+          ),
+      ),
+      // take only the final answer
       filter(
-        (ajaxResponse: AjaxResponse<T>) =>
+        (ajaxResponse: AjaxResponse<T>): boolean =>
           ajaxResponse.type === 'download_load',
       ),
-      map((ajaxResponse: AjaxResponse<T>) => ({
-        status: ajaxResponse.status,
-        response: ajaxResponse.response,
-        responseHeaders: Object.keys(ajaxResponse.responseHeaders)
-          .filter((key: string) => key !== '')
-          .reduce(
-            (acc, curr) => ({
-              ...acc,
-              [curr]: ajaxResponse.responseHeaders[curr],
-            }),
-            {},
+      // create our own response object instance
+      map(
+        (ajaxResponse: AjaxResponse<T>): RxFileUploadResponse<T> => ({
+          status: ajaxResponse.status,
+          response: ajaxResponse.response,
+          responseHeaders: Object.keys(ajaxResponse.responseHeaders)
+            .filter((key: string) => key !== '')
+            .reduce(
+              (acc, curr) => ({
+                ...acc,
+                [curr]: ajaxResponse.responseHeaders[curr],
+              }),
+              {},
+            ),
+        }),
+      ),
+      // add file index in the response if it's a multiple files upload
+      mergeMap(
+        (
+          response: RxFileUploadResponse<T>,
+        ): Observable<RxFileUploadResponse<T>> =>
+          merge(
+            of(fileIndex).pipe(
+              filter((_: number): boolean => typeof _ === 'number'),
+              map((): RxFileUploadResponse<T> => ({ ...response, fileIndex })),
+            ),
+            of(fileIndex).pipe(
+              filter((_: number): boolean => typeof _ !== 'number'),
+              map((): RxFileUploadResponse<T> => response),
+            ),
           ),
-      })),
-      mergeMap((response: RxFileUploadResponse<T>) =>
-        merge(
-          of(fileIndex).pipe(
-            filter((_: number) => typeof _ === 'number'),
-            map(() => ({ ...response, fileIndex })),
-          ),
-          of(fileIndex).pipe(
-            filter((_: number) => typeof _ !== 'number'),
-            map(() => response),
-          ),
-        ),
       ),
     );
 
@@ -418,16 +500,20 @@ export class RxFileUpload {
     additionalFormData?: RxFileUploadAdditionalFormData,
   ): Observable<FormData> =>
     this._fileDataWithAdditionalData(file, additionalFormData).pipe(
-      map((data: any) => ({
-        formData: new FormData(),
-        data: { ...data, file },
-      })),
-      map((_: RxFileUploadBodyData) => {
-        Object.keys(_.data).forEach((key: string) =>
-          _.formData.append(key, _.data[key]),
-        );
-        return _.formData;
-      }),
+      map(
+        (data: any): RxFileUploadBodyData => ({
+          formData: new FormData(),
+          data: { ...data, file },
+        }),
+      ),
+      map(
+        (_: RxFileUploadBodyData): FormData => {
+          Object.keys(_.data).forEach((key: string) =>
+            _.formData.append(key, _.data[key]),
+          );
+          return _.formData;
+        },
+      ),
     );
 
   /**
@@ -441,38 +527,40 @@ export class RxFileUpload {
     additionalFormData?: RxFileUploadAdditionalFormData,
   ): Observable<any> =>
     of(of(this._addChecksum)).pipe(
-      mergeMap((obs: Observable<boolean>) =>
-        merge(
-          obs.pipe(
-            filter((addChecksum: boolean) => !!addChecksum),
-            mergeMap(() =>
-              this._calculateCheckSum(file).pipe(
-                map((checksum: string) => ({
-                  fileData: this._serialize({
-                    name: file.name,
-                    size: file.size,
-                    lastModified: file.lastModified,
-                    type: file.type,
-                    sha256Checksum: checksum,
-                  }),
-                })),
+      mergeMap(
+        (obs: Observable<boolean>): Observable<{ fileData: string }> =>
+          merge(
+            obs.pipe(
+              filter((addChecksum: boolean): boolean => !!addChecksum),
+              mergeMap(
+                (): Observable<{ fileData: string }> =>
+                  this._calculateCheckSum(file).pipe(
+                    map((checksum: string): { fileData: string } => ({
+                      fileData: this._serialize({
+                        name: file.name,
+                        size: file.size,
+                        lastModified: file.lastModified,
+                        type: file.type,
+                        sha256Checksum: checksum,
+                      }),
+                    })),
+                  ),
               ),
             ),
+            obs.pipe(
+              filter((addChecksum: boolean): boolean => !addChecksum),
+              map((): { fileData: string } => ({
+                fileData: this._serialize({
+                  name: file.name,
+                  size: file.size,
+                  lastModified: file.lastModified,
+                  type: file.type,
+                }),
+              })),
+            ),
           ),
-          obs.pipe(
-            filter((addChecksum: boolean) => !addChecksum),
-            map(() => ({
-              fileData: this._serialize({
-                name: file.name,
-                size: file.size,
-                lastModified: file.lastModified,
-                type: file.type,
-              }),
-            })),
-          ),
-        ),
       ),
-      map((data: { fileData: string }) =>
+      map((data: { fileData: string }): any =>
         typeof additionalFormData !== 'undefined' &&
         typeof additionalFormData.fieldName === 'string' &&
         ['string', 'object'].includes(typeof additionalFormData.data)
@@ -483,6 +571,71 @@ export class RxFileUpload {
               ),
             }
           : data,
+      ),
+    );
+
+  /**
+   * Helper to build formData body for one file upload with chunks
+   *
+   * @param {File} file the file to upload to the server
+   * @param {RxFileUploadAdditionalFormData} additionalFormData sent to the server
+   */
+  private _chunkBodyData = (
+    file: File,
+    additionalFormData?: RxFileUploadAdditionalFormData,
+  ): Observable<RxFileUploadChunkFormData[]> =>
+    this._fileDataWithAdditionalData(file, additionalFormData).pipe(
+      mergeMap(
+        (fileData: any): Observable<RxFileUploadChunkFormData[]> =>
+          this._calculateChunkSizes(file.size).pipe(
+            mergeMap(
+              (
+                chunkSizes: RxFileUploadChunkSize[],
+              ): Observable<RxFileUploadChunkFormData[]> =>
+                from(chunkSizes).pipe(
+                  map(
+                    (
+                      _: RxFileUploadChunkSize,
+                      index: number,
+                    ): RxFileUploadChunkBodyData => ({
+                      data: {
+                        file: new File(
+                          [file.slice(_.startByte, _.endByte)],
+                          file.name,
+                          { type: file.type },
+                        ),
+                        ...fileData,
+                        chunkData: this._serialize({
+                          sequence: index + 1,
+                          totalChunks: chunkSizes.length,
+                          startByte: _.startByte,
+                          endByte: _.endByte,
+                        }),
+                      },
+                      formData: new FormData(),
+                      chunkSequenceData: {
+                        sequence: index + 1,
+                        totalChunks: chunkSizes.length,
+                      },
+                    }),
+                  ),
+                  map(
+                    (
+                      _: RxFileUploadChunkBodyData,
+                    ): RxFileUploadChunkFormData => {
+                      Object.keys(_.data).forEach((key: string) =>
+                        _.formData.append(key, _.data[key]),
+                      );
+                      return {
+                        formData: _.formData,
+                        chunkSequenceData: _.chunkSequenceData,
+                      };
+                    },
+                  ),
+                  toArray(),
+                ),
+            ),
+          ),
       ),
     );
 
@@ -567,7 +720,7 @@ export class RxFileUpload {
    */
   private _calculateCheckSum = (file: File): Observable<string> =>
     from(file.arrayBuffer()).pipe(
-      map((arrayBuffer: ArrayBuffer) =>
+      map((arrayBuffer: ArrayBuffer): string =>
         SHA256(WordArray.create(new Uint8Array(arrayBuffer))).toString(),
       ),
     );

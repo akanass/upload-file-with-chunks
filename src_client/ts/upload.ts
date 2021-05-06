@@ -11,6 +11,7 @@ import {
   useChunkInput,
 } from './_selectors';
 import {
+  RxFileUploadError,
   RxFileUploadProgressData,
   RxFileUploadResponse,
 } from './lib/rx-file-upload';
@@ -125,15 +126,13 @@ const uploadFilesButtonProcess = (): void => {
           : fileEndpointInput.value,
         addChecksum: addChecksumInput.checked,
         useChunks: useChunkInput.checked,
+        chunkSize: 10485760,
       });
 
       // listen on progress to update UI
-      progressSubscription = manager.progress$.subscribe(
-        (_: RxFileUploadProgressData) => {
-          console.log(_); // TODO delete when library totally finished
-          updateProgressUI(_);
-        },
-      );
+      progressSubscription = manager.progress$.subscribe({
+        next: (_: RxFileUploadProgressData) => updateProgressUI(_),
+      });
 
       // upload file
       uploadSubscription = manager.upload<any>(files).subscribe({
@@ -149,9 +148,9 @@ const uploadFilesButtonProcess = (): void => {
           // enable button with timeout to avoid flickering
           setTimeout(() => (selectFilesButton.disabled = false), 500);
         },
-        error: (e) => {
+        error: (e: RxFileUploadError) => {
           // display error in the console
-          console.error(e.message);
+          console.error(e);
 
           // enable button with timeout to avoid flickering
           setTimeout(() => (selectFilesButton.disabled = false), 500);
@@ -208,7 +207,9 @@ const updateProgressUI = (data: RxFileUploadProgressData): void => {
       typeof data.fileIndex === 'number' ? data.fileIndex : 0
     ];
   // update content
-  selectors.progressValue.classList.add('progress-value-content');
+  if (!selectors.progressValue.classList.contains('progress-value-content')) {
+    selectors.progressValue.classList.add('progress-value-content');
+  }
   selectors.progressValue.style.width = selectors.progressValueText.innerText = `${data.progress}%`;
 };
 
@@ -218,8 +219,8 @@ const updateProgressUI = (data: RxFileUploadProgressData): void => {
  * @param {RxFileUploadResponse<any>} data response from the API may contain filePath and fileIndex if coming from our API
  */
 const updateFilePathUI = (data: RxFileUploadResponse<any>): void => {
-  // check if the response comes from our API
-  if (typeof data.response.filePath === 'string') {
+  // check if the response comes from our API and with a known response to update the UI
+  if (typeof data.response?.filePath === 'string') {
     // get all elements to update
     const selectors =
       fileDetailSelectors[
