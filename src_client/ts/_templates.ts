@@ -10,7 +10,7 @@ const fileUploadDetailTpl = `
     <div class="preview mgt30">
         <div class="file-upload-detail">
             <div class="file-upload-detail-description direction-column">
-                <div class="file-name mdc-typography--body2">{{filename}}</div>
+                <div class="mdc-typography--body2">{{filename}}</div>
                 <div class="mdc-typography--caption">Size: {{filesize}}</div>
             </div>
             <div class="content-center file-upload-detail-progress">
