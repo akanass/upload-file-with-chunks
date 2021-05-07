@@ -242,7 +242,7 @@ export class RxFileUpload {
     additionalFormData?: RxFileUploadAdditionalFormData,
   ): Observable<RxFileUploadResponse<T>> =>
     of([].concat(oneFileOrMultipleFiles)).pipe(
-      // check if we have really file object inside our array
+      // check if we really have file object inside our array
       map((files: File[]) =>
         files.filter((file: File) => file instanceof File),
       ),
@@ -272,16 +272,15 @@ export class RxFileUpload {
                   this._uploadFile<T>(files[0], additionalFormData),
               ),
             ),
-            // upload multiple files TODO
+            // upload multiple files
             of(this._numberOfFilesToUpload).pipe(
               filter((length: number): boolean => length > 1),
               mergeMap(
                 (): Observable<RxFileUploadResponse<T>> =>
-                  throwError(
-                    () =>
-                      new Error(
-                        'Multiple files uploading is not supported at the moment.',
-                      ),
+                  from(files).pipe(
+                    mergeMap((file: File, fileIndex: number) =>
+                      this._uploadFile<T>(file, additionalFormData, fileIndex),
+                    ),
                   ),
               ),
             ),
