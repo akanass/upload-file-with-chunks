@@ -116,7 +116,7 @@ type RxFileUploadChunkFormData = Omit<RxFileUploadChunkBodyData, 'data'>;
 /**
  * Helper to check if we are in the browser and all required elements are available
  */
-export const supportRxFileUpload = (): boolean =>
+export const supportsRxFileUpload = (): boolean =>
   typeof window !== 'undefined' &&
   typeof XMLHttpRequest === 'function' &&
   typeof FormData === 'function';
@@ -132,7 +132,7 @@ export class RxFileUpload {
    * because JS doesn't use typings so you can pass what you want inside and if one property isn't allowed
    * we will throw an error
    */
-  private _allowedConfigProperties: string[] = [
+  private readonly _allowedConfigProperties: string[] = [
     'url',
     'headers',
     'timeout',
@@ -146,7 +146,7 @@ export class RxFileUpload {
     'queryParams',
   ];
   // private property to store 1024 bytes / 1 Kb
-  private _oneKb = 1024;
+  private readonly _oneKb = 1024;
   // private property to store xhr configuration
   private _config: AjaxConfig;
   // private property to store ajax function
@@ -159,6 +159,8 @@ export class RxFileUpload {
   private readonly _addChecksum: boolean;
   // private property to store flag to know if chunks split is disable or not
   private readonly _useChunks: boolean;
+  // private property to store the number of file to upload and know when complete the progress stream
+  private _numberOfFilesToUpload: number;
   // private property to store progress Subject
   private readonly _progress$: Subject<RxFileUploadProgressData>;
 
@@ -169,49 +171,44 @@ export class RxFileUpload {
    */
   constructor(config: RxFileUploadConfig) {
     // check if functionality is available
-    if (!supportRxFileUpload()) {
+    if (!supportsRxFileUpload()) {
       throw new Error(
         'You must be in a compatible browser to use this library !!!',
       );
     }
 
-    // set chunk size property
-    if (!!config.chunkSize) {
+    // set default chunk size to 1 Mb
+    this._chunkSize = this._oneKb * this._oneKb;
+
+    // check if chunk size property is in the config
+    if (typeof config.chunkSize === 'number') {
       // check chunk size before storing it
       this._checkChunkSize(config.chunkSize);
       // set chunk size
       this._chunkSize = config.chunkSize;
       // delete chunk size in config
       delete config.chunkSize;
-    } else {
-      // set default chunk size to 1 Mb
-      this._chunkSize = this._oneKb * this._oneKb;
     }
 
+    // set default flag value to false
+    this._addChecksum = false;
+
     // check if flag is set in the config
-    if (typeof config.addChecksum !== 'undefined') {
-      // set flag to know if checksum is disable or not
-      if (typeof config.addChecksum === 'boolean')
-        this._addChecksum = config.addChecksum;
-      else this._addChecksum = false;
+    if (typeof config.addChecksum === 'boolean') {
+      this._addChecksum = config.addChecksum;
       // delete flag in config
       delete config.addChecksum;
-    } else {
-      // set default value to false
-      this._addChecksum = false;
     }
 
+    // set default flag value to false
+    this._useChunks = false;
+
     // check if flag is set in the config
-    if (typeof config.useChunks !== 'undefined') {
+    if (typeof config.useChunks === 'boolean') {
       // set flag to know if checksum is disable or not
-      if (typeof config.useChunks === 'boolean')
-        this._useChunks = config.useChunks;
-      else this._useChunks = false;
+      this._useChunks = config.useChunks;
       // delete flag in config
       delete config.useChunks;
-    } else {
-      // set default value to false
-      this._useChunks = false;
     }
 
     // set ajax configuration property
@@ -219,6 +216,9 @@ export class RxFileUpload {
 
     // set ajax function property
     this._ajax = ajax;
+
+    // init the number of files to 0
+    this._numberOfFilesToUpload = 0;
 
     // set progress Subject
     this._progress$ = new Subject<RxFileUploadProgressData>();
@@ -242,11 +242,17 @@ export class RxFileUpload {
     additionalFormData?: RxFileUploadAdditionalFormData,
   ): Observable<RxFileUploadResponse<T>> =>
     of([].concat(oneFileOrMultipleFiles)).pipe(
+      // check if we have really file object inside our array
+      map((files: File[]) =>
+        files.filter((file: File) => file instanceof File),
+      ),
+      // store real number of files to upload
+      tap((files: File[]) => (this._numberOfFilesToUpload = files.length)),
       mergeMap(
         (files: File[]): Observable<RxFileUploadResponse<T>> =>
           merge(
             // no file to upload throw error
-            of(files.length).pipe(
+            of(this._numberOfFilesToUpload).pipe(
               filter((length: number): boolean => length === 0),
               mergeMap(
                 (): Observable<never> =>
@@ -259,7 +265,7 @@ export class RxFileUpload {
               ),
             ),
             // upload only one file
-            of(files.length).pipe(
+            of(this._numberOfFilesToUpload).pipe(
               filter((length: number): boolean => length === 1),
               mergeMap(
                 (): Observable<RxFileUploadResponse<T>> =>
@@ -267,7 +273,7 @@ export class RxFileUpload {
               ),
             ),
             // upload multiple files TODO
-            of(files.length).pipe(
+            of(this._numberOfFilesToUpload).pipe(
               filter((length: number): boolean => length > 1),
               mergeMap(
                 (): Observable<RxFileUploadResponse<T>> =>
@@ -424,7 +430,12 @@ export class RxFileUpload {
                   typeof chunk === 'undefined' ||
                   chunk.sequence === chunk.totalChunks,
               ),
-              tap(() => this._progress$.complete()),
+              tap(() => this._numberOfFilesToUpload--),
+              tap(() =>
+                this._numberOfFilesToUpload === 0
+                  ? this._progress$.complete()
+                  : undefined,
+              ),
               map((): AjaxResponse<T> => ajaxResponse),
             ),
             // final answer
@@ -637,7 +648,7 @@ export class RxFileUpload {
   private _checkChunkSize = (chunkSize: number): void => {
     if (typeof chunkSize !== 'number' || chunkSize % this._oneKb !== 0) {
       throw new Error(
-        'The size of a chunk must be a multiple of 1024 bytes !!!',
+        'The size of a chunk must be a multiple of 1024 bytes / 1 Kb !!!',
       );
     }
   };
@@ -645,7 +656,7 @@ export class RxFileUpload {
   /**
    * Helper to check the validity of the config object before setting it in instance property
    *
-   * @param {RxFileUploadConfig} config object to configure the xhr request
+   * @param {Omit<RxFileUploadConfig, 'chunkSize' | 'addChecksum' | 'useChunks'>} config object to configure the xhr request
    *
    * @private
    */
@@ -653,7 +664,7 @@ export class RxFileUpload {
     config: Omit<RxFileUploadConfig, 'chunkSize' | 'addChecksum' | 'useChunks'>,
   ): void => {
     // check if config's properties are allowed -> JS verification when not using typings
-    Object.keys(config).forEach((_) => {
+    Object.keys(config).forEach((_: string) => {
       if (!this._allowedConfigProperties.includes(_))
         throw new Error(
           `"${_}" isn't a valid property of "RxFileUploadConfig"`,
@@ -670,7 +681,7 @@ export class RxFileUpload {
             ...config,
             // remove content-type header if exists
             headers: Object.keys(config.headers)
-              .filter((_) => _.toLowerCase() !== 'content-type')
+              .filter((_: string) => _.toLowerCase() !== 'content-type')
               .reduce(
                 (acc, curr) => ({ ...acc, [curr]: config.headers[curr] }),
                 {},
