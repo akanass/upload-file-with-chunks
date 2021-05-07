@@ -43,7 +43,7 @@ export class FileDiskStorageWithChunks extends Transform {
    */
   _flush = (callback: TransformCallback): void => {
     // declare flag to know if we should delete the file before appending data
-    let hasToUnlink = true;
+    let haveToUnlink = true;
 
     // check if are in a chunk call and if we have to append the content to the file
     if (typeof this._data.fields.chunkData === 'object') {
@@ -51,7 +51,7 @@ export class FileDiskStorageWithChunks extends Transform {
       const chunkData = deserialize(this._data.fields.chunkData.value);
 
       // stop deleting file because sequence > 1
-      if (chunkData.sequence > 1) hasToUnlink = false;
+      if (chunkData.sequence > 1) haveToUnlink = false;
     }
 
     // path to write/unlink file
@@ -62,23 +62,22 @@ export class FileDiskStorageWithChunks extends Transform {
       appendFile(path, Buffer.concat(this._chunks), { encoding: 'binary' });
 
     // check if we have to unlink file before writing it
-    if (!hasToUnlink)
-      writeable().then(
-        () => callback(),
-        (e) => callback(e),
-      );
-    else
-      unlink(path).then(
-        () =>
-          writeable().then(
-            () => callback(),
-            (e) => callback(e),
-          ),
-        () =>
-          writeable().then(
-            () => callback(),
-            (e) => callback(e),
-          ),
-      );
+    !haveToUnlink
+      ? writeable().then(
+          () => callback(),
+          (e) => callback(e),
+        )
+      : unlink(path).then(
+          () =>
+            writeable().then(
+              () => callback(),
+              (e) => callback(e),
+            ),
+          () =>
+            writeable().then(
+              () => callback(),
+              (e) => callback(e),
+            ),
+        );
   };
 }
