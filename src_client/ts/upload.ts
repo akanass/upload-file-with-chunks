@@ -129,27 +129,27 @@ const uploadFilesButtonProcess = (): void => {
       // listen on progress to update UI
       progressSubscription = manager.progress$.subscribe({
         next: (_: RxFileUploadProgressData) => {
-          console.log(_); // TODO delete when library totally finished
+          console.log(_);
           updateProgressUI(_);
         },
-        complete: () => console.log('PROGRESS COMPLETE'), // TODO delete when library totally finished
+        complete: () => console.log('PROGRESS ALL FILES COMPLETED'),
       });
 
       // upload file
       uploadSubscription = manager.upload<any>(files).subscribe({
         next: (_: RxFileUploadResponse<any>) => {
-          console.log(_); // TODO delete when library totally finished
+          console.log(_);
           // update file path UI if it exists inside the response
           updateUI(_);
         },
-        error: (e: RxFileUploadError) => {
+        error: (e: RxFileUploadError | Error) => {
           // display error in the console
           console.error(e);
 
           // enable button with timeout to avoid flickering
           setTimeout(() => (selectFilesButton.disabled = false), 500);
         },
-        complete: () => console.log('UPLOAD COMPLETE'), // TODO delete when library totally finished
+        complete: () => console.log('UPLOAD ALL FILES COMPLETED'),
       });
     });
   });
