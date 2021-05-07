@@ -18,10 +18,6 @@
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix"
   },
   "dependencies": {
-    "@material/button": "^11.0.0",
-    "@material/card": "^11.0.0",
-    "@material/checkbox": "^11.0.0",
-    "@material/form-field": "^11.0.0",
     "@nestjs/common": "^7.6.15",
     "@nestjs/core": "^7.6.15",
     "@nestjs/platform-fastify": "^7.6.15",
@@ -36,6 +32,11 @@
     "rxjs": "^7.0.0"
   },
   "devDependencies": {
+    "@material/button": "^11.0.0",
+    "@material/card": "^11.0.0",
+    "@material/checkbox": "^11.0.0",
+    "@material/form-field": "^11.0.0",
+    "@material/slider": "^11.0.0",
     "@nestjs/cli": "^7.6.0",
     "@nestjs/schematics": "^7.3.1",
     "@rollup/plugin-node-resolve": "^13.0.0",

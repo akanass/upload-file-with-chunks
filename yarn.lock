@@ -247,6 +247,22 @@
     "@material/theme" "^11.0.0"
     tslib "^2.1.0"
 
+"@material/slider@^11.0.0":
+  version "11.0.0"
+  resolved "https://registry.yarnpkg.com/@material/slider/-/slider-11.0.0.tgz#602693ac057bff307b5d5b0c3921e3e53d64ee24"
+  integrity sha512-EJqYV4hP6nUHEO/KyhlRZo7ZN+O5kVNdN6TRU8yTQiAVk9nwvviPhVDdHGj3FvnF1y86fnGvt1zS/MFCP923cg==
+  dependencies:
+    "@material/animation" "^11.0.0"
+    "@material/base" "^11.0.0"
+    "@material/dom" "^11.0.0"
+    "@material/elevation" "^11.0.0"
+    "@material/feature-targeting" "^11.0.0"
+    "@material/ripple" "^11.0.0"
+    "@material/rtl" "^11.0.0"
+    "@material/theme" "^11.0.0"
+    "@material/typography" "^11.0.0"
+    tslib "^2.1.0"
+
 "@material/theme@^11.0.0":
   version "11.0.0"
   resolved "https://registry.yarnpkg.com/@material/theme/-/theme-11.0.0.tgz#179df345034213c5ae1e8dcaf47f67f7bf6b71dd"
