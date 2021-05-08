@@ -1,73 +1,89 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo_text.svg" width="320" alt="Nest Logo" /></a>
-</p>
+# Upload Files With Chunks
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Project to show how to upload a file in the browser and send it fully or in several chunks to the server.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+It is an implementation of the ["@akanass/rx-file-upload"](https://github.com/akanass/rx-file-upload) library for the client part and of the ["fastify-multipart"](https://github.com/fastify/fastify-multipart) pluglin for the server part in [NestJS](https://github.com/nestjs/nest).
 
 ## Installation
 
 ```bash
-$ npm install
+$ cd path/to/workspace
+$ git clone https://github.com/akanass/upload-file-with-chunks.git | git@github.com:akanass/upload-file-with-chunks.git
 ```
+
+### Local
+
+```bash
+# install dependencies
+$ yarn install | npm install
+```
+
+### Docker
+
+You don't have to do anything more.
+
+## Configuration
+
+You can change the configuration in [default config file](https://github.com/akanass/upload-file-with-chunks/blob/master/config/default.yml#L54).
+
+Each time you change a configuration data, you will have to restart the application for the changes to be taken into account.
+
+If for example you want to use your **own API** to receive the files you need to change the `upload.api.fileEndpoint` value to `"http://mon-api.com"`.
 
 ## Running the app
 
-```bash
-# development
-$ npm run start
+Once launched, the application will run on port **3000**.
 
-# watch mode
-$ npm run start:dev
+### Local
+
+```bash
+# build
+$ {yarn|npm} run build
 
 # production mode
-$ npm run start:prod
+$ {yarn|npm} run start:prod
 ```
 
-## Test
+### Docker
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+$ docker-compose up -d
 ```
 
-## Support
+## Application in details
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Once your application is launched, you will first need to select the file to upload to your API:
 
-## Stay in touch
+<img src="img/select-files.png" alt="rootCA" width="200" />
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Once selected, you can choose upload options:
+
+<img src="img/choose-options.png" alt="rootCA" width="200" />
+
+If you choose to upload your files into **chunks**, you will be able to choose the **size** of each chunk using the associated **slider**.
+
+If the value is equal to `0` then the default value of `1Mb` will be taken into account.
+
+<img src="img/chunks-option.png" alt="rootCA" width="200" />
+
+The second possible option is to add a sha256 encoded checksum for each file.
+
+However, you should know that the larger the file, the longer the generation time will be, which will cause a delay before sending it to the API.
+
+<img src="img/checksum-option.png" alt="rootCA" width="200" />
+
+Finally, you just have to click on the upload button and enjoy the magic of the library that will do everything for you:
+
+<img src="img/uploaded.png" alt="rootCA" width="200" />
+
+And of course, multiple file uploads are taken into account by the library:
+
+<img src="img/multiple-files.png" alt="rootCA" width="200" />
+
+## Implementation
+
+If you want to see how the **client** implementation is going you can go [here](https://github.com/akanass/upload-file-with-chunks/blob/master/src_client/ts/upload.ts) and for the **server** implementation [here](https://github.com/akanass/upload-file-with-chunks/blob/master/src/api/api.controller.ts).
 
 ## License
 
-Nest is [MIT licensed](LICENSE).
+This project is [MIT licensed](LICENSE).
