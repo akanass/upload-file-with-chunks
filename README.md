@@ -4,6 +4,8 @@ Project to show how to upload a file in the browser and send it fully or in seve
 
 It is an implementation of the ["@akanass/rx-file-upload"](https://github.com/akanass/rx-file-upload) library for the client part and of the ["fastify-multipart"](https://github.com/fastify/fastify-multipart) pluglin for the server part in [NestJS](https://github.com/nestjs/nest).
 
+**NOTE: You must have a recent browser that supports `ESM modules` in order to run the application.**
+
 ## Installation
 
 ```bash
@@ -22,14 +24,6 @@ $ yarn install | npm install
 
 You don't have to do anything more.
 
-## Configuration
-
-You can change the configuration in [default config file](https://github.com/akanass/upload-file-with-chunks/blob/master/config/default.yml#L54).
-
-Each time you change a configuration data, you will have to restart the application for the changes to be taken into account. If you are running the application inside **Docker**, you must **rebuild** it.
-
-If for example you want to use your **own API** to receive the files you need to change the `upload.api.fileEndpoint` value to `"http://mon-api.com"`.
-
 ## Running the app
 
 Once launched, the application will run on port **3000**.
@@ -47,7 +41,28 @@ $ {yarn|npm} run start:prod
 ### Docker
 
 ```bash
-$ docker-compose up -d
+$ docker compose up -d
+```
+
+## Configuration
+
+You can change the configuration in [default config file](https://github.com/akanass/upload-file-with-chunks/blob/master/config/default.yml#L54).
+
+If for example you want to use your **own API** to receive the files you need to change the `upload.api.fileEndpoint` value to `"http://mon-api.com"`.
+
+Each time you change a configuration data, you will have to restart the application for the changes to be taken into account.
+
+### Local
+
+```bash
+# relaunch production mode
+$ {yarn|npm} run start:prod
+```
+
+### Docker
+
+```bash
+$ docker compose up --build -d
 ```
 
 ## Application in details
