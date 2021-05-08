@@ -1,6 +1,6 @@
 import { MDCRipple } from '@material/ripple';
 import { MDCCheckbox } from '@material/checkbox';
-import { MDCFormField } from '@material/form-field/component';
+import { MDCFormField } from '@material/form-field';
 
 // add ripple effect
 const rippleSelectors =
@@ -14,7 +14,7 @@ const rippleSelectors =
 [].map.call(document.querySelectorAll('.mdc-checkbox'), (el) => {
   const checkbox = new MDCCheckbox(el);
   const parentNode = el.parentNode;
-  if (parentNode.className.indexOf('mdc-form-field') > -1) {
+  if (parentNode.classList.contains('mdc-form-field')) {
     const formField = new MDCFormField(parentNode);
     formField.input = checkbox;
   }

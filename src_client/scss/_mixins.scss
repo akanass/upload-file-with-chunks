@@ -3,9 +3,10 @@
   $font-family: unquote("Montserrat, sans-serif")
 );
 @use "@material/card";
-@use "@material/button/styles";
+@use "@material/button/styles" as button-core-styles;
 @use "@material/checkbox";
 @use "@material/form-field";
+@use "@material/slider/styles" as slider-core-styles;
 
 
 @include typography.core-styles; // apply typography style

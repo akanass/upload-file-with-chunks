@@ -1,10 +1,12 @@
 <div class="mdc-typography--body2">
-    Click on the "select file{{#if multiple}}s{{/if}}" button to select the file{{#if multiple}}s{{/if}} to upload and then click on the "upload" button to send {{#if multiple}}them{{else}}it{{/if}} to the server.
+    Click on the "select file{{#if multiple}}s{{/if}}" button to select the file{{#if multiple}}
+    s{{/if}} to upload and then click on the "upload" button to send {{#if multiple}}
+    them{{else}}it{{/if}} to the server.
 </div>
 <div class="mdc-typography--body2">
     The {{#if multiple}}list of files{{else}}file{{/if}} that will be sent will be displayed in the area below.
 </div>
-<div class="content-center justify-content-space mgt30">
+<div class="display-flex content-center justify-content-space mgt30">
     <button id="select-files" class=" mdc-button mdc-button--raised">
         <div class="mdc-button__ripple"></div>
         <i class="material-icons mdc-button__icon" aria-hidden="true">folder</i>
@@ -16,14 +18,14 @@
         <span id="button-label" class="mdc-button__label">Upload</span>
     </button>
 </div>
-<div id="options" class="content-center justify-content-left mgt30">
+<div class="display-flex content-center justify-content-left mgt30">
     <div class="mdc-typography--body2">Upload options:</div>
-    <div class="options-checkbox-container">
+    <div class="display-flex justify-content-space flew-grow-2">
         <div class="mdc-form-field">
             <div class="mdc-checkbox">
                 <input type="checkbox"
                        class="mdc-checkbox__native-control"
-                       id="add-checksum"/>
+                       id="add-checksum" disabled/>
                 <div class="mdc-checkbox__background">
                     <svg class="mdc-checkbox__checkmark"
                          viewBox="0 0 24 24">
@@ -41,7 +43,7 @@
             <div class="mdc-checkbox">
                 <input type="checkbox"
                        class="mdc-checkbox__native-control"
-                       id="use-chunks" />
+                       id="use-chunks" disabled/>
                 <div class="mdc-checkbox__background">
                     <svg class="mdc-checkbox__checkmark"
                          viewBox="0 0 24 24">
@@ -54,6 +56,40 @@
                 <div class="mdc-checkbox__ripple"></div>
             </div>
             <label class="mdc-typography--caption" for="use-chunks">Use chunks to upload file</label>
+        </div>
+    </div>
+</div>
+<div class="display-flex content-center justify-content-left">
+    <div class="mdc-typography--body2">Chunk size (Mb):</div>
+    <div id="chunk-size-selector" class="mdc-slider mdc-slider--discrete mdc-slider--tick-marks mdc-slider--disabled flew-grow-2">
+        <input class="mdc-slider__input" type="range" min="0" max="50" value="0" name="chunkSize" step="5"
+               aria-label="Chunk size for file upload" disabled>
+        <div class="mdc-slider__track">
+            <div class="mdc-slider__track--inactive"></div>
+            <div class="mdc-slider__track--active">
+                <div class="mdc-slider__track--active_fill"></div>
+            </div>
+            <div class="mdc-slider__tick-marks">
+                <div class="mdc-slider__tick-mark--inactive"></div>
+                <div class="mdc-slider__tick-mark--inactive"></div>
+                <div class="mdc-slider__tick-mark--inactive"></div>
+                <div class="mdc-slider__tick-mark--inactive"></div>
+                <div class="mdc-slider__tick-mark--inactive"></div>
+                <div class="mdc-slider__tick-mark--inactive"></div>
+                <div class="mdc-slider__tick-mark--inactive"></div>
+                <div class="mdc-slider__tick-mark--inactive"></div>
+                <div class="mdc-slider__tick-mark--inactive"></div>
+                <div class="mdc-slider__tick-mark--inactive"></div>
+                <div class="mdc-slider__tick-mark--inactive"></div>
+            </div>
+        </div>
+        <div class="mdc-slider__thumb">
+            <div class="mdc-slider__value-indicator-container" aria-hidden="true">
+                <div class="mdc-slider__value-indicator">
+                    <span class="mdc-slider__value-indicator-text">5</span>
+                </div>
+            </div>
+            <div class="mdc-slider__thumb-knob"></div>
         </div>
     </div>
 </div>

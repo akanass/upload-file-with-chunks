@@ -1,5 +1,6 @@
 @use "@material/theme";
 @use "@material/button";
+@use "@material/slider";
 
 html, body {
   padding: 0;
@@ -11,8 +12,11 @@ html, body {
   height: 100vh;
 }
 
-.content-center {
+.display-flex {
   display: flex;
+}
+
+.content-center {
   justify-content: center;
   align-items: center;
 }
@@ -70,6 +74,12 @@ html, body {
   text-align: center;
 }
 
+.mdc-slider {
+  @include slider.tick-mark-active-color(theme.$secondary);
+  @include slider.thumb-color(theme.$secondary);
+  @include slider.thumb-ripple-color(theme.$secondary);
+}
+
 .mdc-button {
   width: 40%;
   @include button.icon-color(theme.$secondary);
@@ -89,6 +99,9 @@ html, body {
 
 #preview {
   padding-bottom: 20px;
+}
+
+.wb-all {
   word-break: break-all;
 }
 
@@ -98,13 +111,8 @@ html, body {
   padding: 7px;
 }
 
-.file-upload-detail {
-  display: flex;
-}
-
 .file-upload-detail-description {
   width: 70%;
-  display: flex;
 }
 
 .file-upload-detail-progress {
@@ -140,8 +148,6 @@ html, body {
   display: none;
 }
 
-.options-checkbox-container {
-  display: flex;
-  justify-content: space-around;
+.flew-grow-2 {
   flex-grow: 2;
 }

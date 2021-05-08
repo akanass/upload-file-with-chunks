@@ -2,6 +2,8 @@ import { Subscription } from 'rxjs';
 import { defaultFilesListContent, fileUploadDetailTpl } from './_templates';
 import {
   addChecksumInput,
+  chunkSizeContainer,
+  chunkSizeSelector,
   fileEndpointInput,
   previewContainer,
   selectFilesButton,
@@ -20,6 +22,7 @@ import {
  */
 let files: File[];
 let fileDetailSelectors: any[];
+let currentChunkSize: number;
 
 let progressSubscription: Subscription;
 let uploadSubscription: Subscription;
@@ -39,6 +42,9 @@ window.addEventListener('load', () => {
 
   // set upload file click process
   uploadFilesButtonProcess();
+
+  // set use chunk checkbox process
+  useChunkProcess();
 });
 
 /**
@@ -52,6 +58,15 @@ const resetElements = (): void => {
   previewContainer.innerHTML = defaultFilesListContent;
   // disable upload button
   uploadFilesButton.disabled = true;
+  // disable chunk selector
+  chunkSizeSelector.setDisabled(true);
+  currentChunkSize = 0;
+  chunkSizeSelector.setValue(currentChunkSize);
+  // uncheck options
+  useChunkInput.checked = false;
+  addChecksumInput.checked = false;
+  useChunkInput.disabled = true;
+  addChecksumInput.disabled = true;
 };
 
 /**
@@ -65,6 +80,29 @@ const selectFilesButtonProcess = (): void => {
     selectFilesInput.click();
     // reset all elements
     resetElements();
+  });
+};
+
+/**
+ * Process when use chunk checkbox change
+ */
+const useChunkProcess = (): void => {
+  useChunkInput.addEventListener('change', (e: Event) => {
+    // stop normal process
+    e.preventDefault();
+
+    // set selector state
+    chunkSizeSelector.setDisabled(!e.target['checked']);
+    !e.target['checked']
+      ? chunkSizeSelector.setValue(0)
+      : chunkSizeSelector.setValue(currentChunkSize);
+  });
+  chunkSizeContainer.addEventListener('MDCSlider:change', (e: Event) => {
+    // stop normal process
+    e.preventDefault();
+
+    // store current chunk size
+    currentChunkSize = chunkSizeSelector.getValue();
   });
 };
 
@@ -88,6 +126,10 @@ const inputFileProcess = (): void => {
 
     // enable upload button
     uploadFilesButton.disabled = false;
+
+    // enable options
+    useChunkInput.disabled = false;
+    addChecksumInput.disabled = false;
   });
   // clean previous selected files
   selectFilesInput.addEventListener(
@@ -108,6 +150,11 @@ const uploadFilesButtonProcess = (): void => {
     uploadFilesButton.disabled = true;
     selectFilesButton.disabled = true;
 
+    // disable all options
+    useChunkInput.disabled = true;
+    addChecksumInput.disabled = true;
+    chunkSizeSelector.setDisabled(true);
+
     // delete previous subscription to memory free
     if (!!uploadSubscription) {
       uploadSubscription.unsubscribe();
@@ -118,12 +165,18 @@ const uploadFilesButtonProcess = (): void => {
 
     // import upload library
     import('./lib/rx-file-upload').then(({ rxFileUpload }) => {
+      // get chunk size with a default to 1Mb
+      let chunkSize = 1048576;
+      if (!!useChunkInput.checked && currentChunkSize > 0) {
+        chunkSize *= currentChunkSize;
+      }
+
       // create new instance of RxFileUpload
       const manager = rxFileUpload({
         url: fileEndpointInput.value,
         addChecksum: addChecksumInput.checked,
         useChunks: useChunkInput.checked,
-        chunkSize: 10485760,
+        chunkSize,
       });
 
       // listen on progress to update UI

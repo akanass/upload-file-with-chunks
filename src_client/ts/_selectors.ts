@@ -1,3 +1,5 @@
+import { MDCSlider } from '@material/slider';
+
 const selectFilesInput: HTMLInputElement = document.querySelector(
   '#input-file',
 );
@@ -15,6 +17,10 @@ const useChunkInput: HTMLInputElement = document.querySelector('#use-chunks');
 const addChecksumInput: HTMLInputElement = document.querySelector(
   '#add-checksum',
 );
+const chunkSizeContainer: HTMLDivElement = document.querySelector(
+  '#chunk-size-selector',
+);
+const chunkSizeSelector: MDCSlider = new MDCSlider(chunkSizeContainer);
 
 export {
   selectFilesInput,
@@ -24,4 +30,6 @@ export {
   fileEndpointInput,
   useChunkInput,
   addChecksumInput,
+  chunkSizeSelector,
+  chunkSizeContainer,
 };
