@@ -241,47 +241,36 @@ export class RxFileUpload {
     oneFileOrMultipleFiles: File | File[],
     additionalFormData?: RxFileUploadAdditionalFormData,
   ): Observable<RxFileUploadResponse<T>> =>
-    of([].concat(oneFileOrMultipleFiles)).pipe(
+    from([].concat(oneFileOrMultipleFiles)).pipe(
       // check if we really have file object inside our array
-      map((files: File[]) =>
-        files.filter((file: File) => file instanceof File),
+      filter((file: File) => file instanceof File),
+      toArray(),
+      // check if we have at least one file to upload
+      mergeMap(
+        (files: File[]): Observable<File[]> =>
+          of(files.length).pipe(
+            filter((length: number): boolean => length === 0),
+            mergeMap(
+              (): Observable<never> =>
+                throwError(
+                  () =>
+                    new Error('You must provide at least one file to upload.'),
+                ),
+            ),
+            defaultIfEmpty(files),
+          ),
       ),
-      // store real number of files to upload
+      // store real number of files to upload for progress process
       tap((files: File[]) => (this._numberOfFilesToUpload = files.length)),
+      // upload file(s)
       mergeMap(
         (files: File[]): Observable<RxFileUploadResponse<T>> =>
-          merge(
-            // no file to upload throw error
-            of(this._numberOfFilesToUpload).pipe(
-              filter((length: number): boolean => length === 0),
-              mergeMap(
-                (): Observable<never> =>
-                  throwError(
-                    () =>
-                      new Error(
-                        'You must provide at least one file to upload.',
-                      ),
-                  ),
-              ),
-            ),
-            // upload only one file
-            of(this._numberOfFilesToUpload).pipe(
-              filter((length: number): boolean => length === 1),
-              mergeMap(
-                (): Observable<RxFileUploadResponse<T>> =>
-                  this._uploadFile<T>(files[0], additionalFormData),
-              ),
-            ),
-            // upload multiple files
-            of(this._numberOfFilesToUpload).pipe(
-              filter((length: number): boolean => length > 1),
-              mergeMap(
-                (): Observable<RxFileUploadResponse<T>> =>
-                  from(files).pipe(
-                    mergeMap((file: File, fileIndex: number) =>
-                      this._uploadFile<T>(file, additionalFormData, fileIndex),
-                    ),
-                  ),
+          from(files).pipe(
+            mergeMap((file: File, fileIndex: number) =>
+              this._uploadFile<T>(
+                file,
+                additionalFormData,
+                files.length > 1 ? fileIndex : undefined,
               ),
             ),
           ),
