@@ -76,6 +76,10 @@ Finally, you just have to click on the upload button and enjoy the magic of the 
 
 <img src="img/uploaded.png" alt="rootCA" width="200" />
 
+If you use **our API** to upload your files, the destination path will be indicated as you can see in the screenshot.
+
+In the case of using the application in **Docker**, the files will be uploaded to the mounted directory `docker_tmp_upload` which is at the **root** of this project.
+
 And of course, multiple file uploads are taken into account by the library:
 
 <img src="img/multiple-files.png" alt="rootCA" width="200" />
