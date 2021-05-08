@@ -26,7 +26,7 @@ You don't have to do anything more.
 
 You can change the configuration in [default config file](https://github.com/akanass/upload-file-with-chunks/blob/master/config/default.yml#L54).
 
-Each time you change a configuration data, you will have to restart the application for the changes to be taken into account.
+Each time you change a configuration data, you will have to restart the application for the changes to be taken into account. If you are running the application inside **Docker**, you must **rebuild** it.
 
 If for example you want to use your **own API** to receive the files you need to change the `upload.api.fileEndpoint` value to `"http://mon-api.com"`.
 
