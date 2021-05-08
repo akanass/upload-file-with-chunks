@@ -41,6 +41,15 @@ assets:
 # Configuration for API endpoint
 #
 # - fileEndpoint is the endpoint to upload file(s)
+#
+# Configuration for additional FormData
+#
+# - additionalFormData is an object to add custom data inside the FormData and send it to the server
+#
+#   - fieldName is the key of the custom data inside the FormData
+#   - data is an object or a string representing the value of this custom data.
+#
+#  This custom data will be automatically serialized before inserted inside the FormData like formData.append(fieldName,data)
 ##
 upload:
   input:
@@ -49,3 +58,11 @@ upload:
       - image/*
   api:
     fileEndpoint: /api/upload
+#  additionalFormData:
+#    fieldName: myAdditionalFormData
+#    data:
+#      first: true
+#      second: itsAString
+#      third:
+#        key1: thirdItsAnObject1
+#        key2: thirdItsAnObject2

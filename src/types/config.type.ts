@@ -20,6 +20,7 @@ export type ViewsConfig = {
 export type UploadConfig = {
   readonly input: UploadInputConfig;
   readonly api: UploadApiEndpointConfig;
+  readonly additionalFormData: UploadAdditionalFormData;
 };
 
 export type UploadApiEndpointConfig = {
@@ -28,4 +29,9 @@ export type UploadApiEndpointConfig = {
 
 export type UploadInputConfig = {
   readonly accept: '*/*' | string[];
+};
+
+export type UploadAdditionalFormData = {
+  readonly fieldName: string;
+  readonly data: any;
 };

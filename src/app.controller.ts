@@ -4,7 +4,9 @@ import {
   UploadInputConfig,
   UploadConfig,
   UploadApiEndpointConfig,
+  UploadAdditionalFormData,
 } from './types/config.type';
+import { serialize } from './utils/functions';
 
 @Controller()
 export class AppController {
@@ -21,11 +23,19 @@ export class AppController {
     let uploadApiEndpointConfig: UploadApiEndpointConfig = {
       fileEndpoint: '/api/upload',
     };
+    let additionalFormData = '';
+    let uploadAdditionalFormData: UploadAdditionalFormData;
 
     try {
       uploadConfig = Config.get<UploadConfig>('upload');
       uploadInputConfig = uploadConfig.input;
       uploadApiEndpointConfig = uploadConfig.api;
+      uploadAdditionalFormData = uploadConfig.additionalFormData;
+      if (
+        typeof uploadAdditionalFormData?.fieldName !== 'undefined' &&
+        typeof uploadAdditionalFormData?.data !== 'undefined'
+      )
+        additionalFormData = serialize(uploadAdditionalFormData);
     } catch (_) {}
 
     res.view('upload', {
@@ -33,6 +43,7 @@ export class AppController {
         ? uploadInputConfig.accept.join(',')
         : '*/*',
       fileEndpoint: uploadApiEndpointConfig.fileEndpoint,
+      additionalFormData,
     });
   }
 }

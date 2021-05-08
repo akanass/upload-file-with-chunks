@@ -21,6 +21,9 @@ const chunkSizeContainer: HTMLDivElement = document.querySelector(
   '#chunk-size-selector',
 );
 const chunkSizeSelector: MDCSlider = new MDCSlider(chunkSizeContainer);
+const additionalFormDataInput: HTMLInputElement = document.querySelector(
+  '#additional-form-data',
+);
 
 export {
   selectFilesInput,
@@ -32,4 +35,5 @@ export {
   addChecksumInput,
   chunkSizeSelector,
   chunkSizeContainer,
+  additionalFormDataInput,
 };

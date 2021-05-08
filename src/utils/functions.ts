@@ -6,4 +6,7 @@ const deserialize = (data: any): any => {
   }
 };
 
-export { deserialize };
+const serialize = (data: any): string =>
+  typeof data === 'string' ? data : JSON.stringify(data);
+
+export { deserialize, serialize };

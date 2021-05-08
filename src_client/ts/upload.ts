@@ -2,6 +2,7 @@ import { Subscription } from 'rxjs';
 import { defaultFilesListContent, fileUploadDetailTpl } from './_templates';
 import {
   addChecksumInput,
+  additionalFormDataInput,
   chunkSizeContainer,
   chunkSizeSelector,
   fileEndpointInput,
@@ -12,6 +13,7 @@ import {
   useChunkInput,
 } from './_selectors';
 import {
+  RxFileUploadAdditionalFormData,
   RxFileUploadError,
   RxFileUploadProgressData,
   RxFileUploadResponse,
@@ -171,6 +173,17 @@ const uploadFilesButtonProcess = (): void => {
         chunkSize *= currentChunkSize;
       }
 
+      // get additional form data
+      let additionalFormData: RxFileUploadAdditionalFormData;
+      const inputAdditionalFormDataValue = deserialize(
+        additionalFormDataInput.value,
+      );
+      if (
+        typeof inputAdditionalFormDataValue?.fieldName !== 'undefined' &&
+        typeof inputAdditionalFormDataValue?.data !== 'undefined'
+      )
+        additionalFormData = inputAdditionalFormDataValue;
+
       // create new instance of RxFileUpload
       const manager = rxFileUpload({
         url: fileEndpointInput.value,
@@ -189,21 +202,23 @@ const uploadFilesButtonProcess = (): void => {
       });
 
       // upload file
-      uploadSubscription = manager.upload<any>(files).subscribe({
-        next: (_: RxFileUploadResponse<any>) => {
-          console.log(_);
-          // update file path UI if it exists inside the response
-          updateUI(_);
-        },
-        error: (e: RxFileUploadError | Error) => {
-          // display error in the console
-          console.error(e);
+      uploadSubscription = manager
+        .upload<any>(files, additionalFormData)
+        .subscribe({
+          next: (_: RxFileUploadResponse<any>) => {
+            console.log(_);
+            // update file path UI if it exists inside the response
+            updateUI(_);
+          },
+          error: (e: RxFileUploadError | Error) => {
+            // display error in the console
+            console.error(e);
 
-          // enable button with timeout to avoid flickering
-          setTimeout(() => (selectFilesButton.disabled = false), 500);
-        },
-        complete: () => console.log('UPLOAD ALL FILES COMPLETED'),
-      });
+            // enable button with timeout to avoid flickering
+            setTimeout(() => (selectFilesButton.disabled = false), 500);
+          },
+          complete: () => console.log('UPLOAD ALL FILES COMPLETED'),
+        });
     });
   });
 };
@@ -300,5 +315,16 @@ const formatFileSizeDisplay = (size: number): string => {
     return `${(size / 1048576).toFixed(1)} Mb`;
   } else if (size >= 1073741824) {
     return `${(size / 1073741824).toFixed(1)} Gb`;
+  }
+};
+
+/**
+ * Helper to deserialize data
+ */
+const deserialize = (data: any): any => {
+  try {
+    return JSON.parse(data);
+  } catch (err) {
+    return data;
   }
 };
