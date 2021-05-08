@@ -1,13 +1,16 @@
-# compiled output
+# APP
 /dist
-/docker_tmp_upload/*
+/docker_tmp_upload
+/img
 /node_modules
 /public/css/*
 /public/js/*
-!/docker_tmp_upload/.gitkeep
-!/public/css/.gitkeep
-!/public/js/.gitkeep
 src/metadata.json
+.gitignore
+docker-compose.yml
+Dockerfile
+README.md
+yarn.lock
 
 # Logs
 logs
@@ -32,6 +35,7 @@ lerna-debug.log*
 *.launch
 .settings/
 *.sublime-workspace
+/.git
 
 # IDE - VSCode
 .vscode/*
