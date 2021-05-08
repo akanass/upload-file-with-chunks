@@ -1,16 +1,15 @@
 <div class="mdc-typography--body2">
-    Click on the "select file{{#if multiple}}s{{/if}}" button to select the file{{#if multiple}}
-    s{{/if}} to upload and then click on the "upload" button to send {{#if multiple}}
-    them{{else}}it{{/if}} to the server.
+    Click on the "select files" button to select the files to upload and then click on the "upload" button to send
+    them to the server.
 </div>
 <div class="mdc-typography--body2">
-    The {{#if multiple}}list of files{{else}}file{{/if}} that will be sent will be displayed in the area below.
+    The list of files that will be sent will be displayed in the area below.
 </div>
 <div class="display-flex content-center justify-content-space mgt30">
     <button id="select-files" class=" mdc-button mdc-button--raised">
         <div class="mdc-button__ripple"></div>
         <i class="material-icons mdc-button__icon" aria-hidden="true">folder</i>
-        <span id="button-label" class="mdc-button__label">Select File{{#if multiple}}s{{/if}}</span>
+        <span id="button-label" class="mdc-button__label">Select Files</span>
     </button>
     <button id="upload-files" class="mdc-button mdc-button--raised" disabled>
         <div class="mdc-button__ripple"></div>
@@ -97,9 +96,5 @@
     <div class="preview mdc-typography--body2 mgt30">No file selected for the moment.</div>
 </div>
 
-{{#if multiple}}
-    <input id="input-file" class="display-none" type="file" accept="{{accept}}" multiple />
-{{else}}
-    <input id="input-file" class="display-none" type="file" accept="{{accept}}" />
-{{/if}}
+<input id="input-file" class="display-none" type="file" accept="{{accept}}" multiple />
 <input id="api-file-endpoint" type="hidden" value="{{fileEndpoint}}">

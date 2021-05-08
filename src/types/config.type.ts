@@ -28,5 +28,4 @@ export type UploadApiEndpointConfig = {
 
 export type UploadInputConfig = {
   readonly accept: '*/*' | string[];
-  readonly multiple: boolean;
 };

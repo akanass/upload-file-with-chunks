@@ -17,7 +17,6 @@ export class AppController {
     let uploadConfig: UploadConfig;
     let uploadInputConfig: UploadInputConfig = {
       accept: '*/*',
-      multiple: false,
     };
     let uploadApiEndpointConfig: UploadApiEndpointConfig = {
       fileEndpoint: '/api/upload',
@@ -33,10 +32,6 @@ export class AppController {
       accept: Array.isArray(uploadInputConfig.accept)
         ? uploadInputConfig.accept.join(',')
         : '*/*',
-      multiple:
-        typeof uploadInputConfig.multiple === 'boolean'
-          ? uploadInputConfig.multiple
-          : false,
       fileEndpoint: uploadApiEndpointConfig.fileEndpoint,
     });
   }
