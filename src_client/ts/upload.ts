@@ -3,6 +3,8 @@ import { defaultFilesListContent, fileUploadDetailTpl } from './_templates';
 import {
   addChecksumInput,
   additionalFormDataInput,
+  apiCrossDomainInput,
+  apiMethodInput,
   chunkSizeContainer,
   chunkSizeSelector,
   fileEndpointInput,
@@ -13,11 +15,12 @@ import {
   useChunkInput,
 } from './_selectors';
 import {
+  RxFileUpload,
   RxFileUploadAdditionalFormData,
   RxFileUploadError,
   RxFileUploadProgressData,
   RxFileUploadResponse,
-} from './lib/rx-file-upload';
+} from '@akanass/rx-file-upload';
 
 /**
  * Variables used inside process
@@ -166,7 +169,7 @@ const uploadFilesButtonProcess = (): void => {
     }
 
     // import upload library
-    import('./lib/rx-file-upload').then(({ rxFileUpload }) => {
+    import('@akanass/rx-file-upload').then(({ rxFileUpload }) => {
       // get chunk size with a default to 1Mb
       let chunkSize = 1048576;
       if (!!useChunkInput.checked && currentChunkSize > 0) {
@@ -185,8 +188,10 @@ const uploadFilesButtonProcess = (): void => {
         additionalFormData = inputAdditionalFormDataValue;
 
       // create new instance of RxFileUpload
-      const manager = rxFileUpload({
+      const manager: RxFileUpload = rxFileUpload({
         url: fileEndpointInput.value,
+        method: apiMethodInput.value,
+        crossDomain: apiCrossDomainInput.value === 'true',
         addChecksum: addChecksumInput.checked,
         useChunks: useChunkInput.checked,
         chunkSize,
@@ -273,7 +278,8 @@ const updateProgressUI = (data: RxFileUploadProgressData): void => {
   if (!selectors.progressValue.classList.contains('progress-value-content')) {
     selectors.progressValue.classList.add('progress-value-content');
   }
-  selectors.progressValue.style.width = selectors.progressValueText.innerText = `${data.progress}%`;
+  selectors.progressValue.style.width = `${data.progress}%`;
+  selectors.progressValueText.innerText = `${data.progress}%`;
 };
 
 /**
