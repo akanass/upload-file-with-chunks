@@ -19,12 +19,13 @@ export type ViewsConfig = {
 
 export type UploadConfig = {
   readonly input: UploadInputConfig;
-  readonly api: UploadApiEndpointConfig;
+  readonly api: UploadApiConfig;
   readonly additionalFormData: UploadAdditionalFormData;
 };
 
-export type UploadApiEndpointConfig = {
+export type UploadApiConfig = {
   readonly fileEndpoint: string;
+  readonly method: 'POST' | 'PUT';
 };
 
 export type UploadInputConfig = {

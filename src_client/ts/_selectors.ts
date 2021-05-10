@@ -13,6 +13,10 @@ const previewContainer: HTMLDivElement = document.querySelector('#preview');
 const fileEndpointInput: HTMLInputElement = document.querySelector(
   '#api-file-endpoint',
 );
+const apiMethodInput: HTMLInputElement = document.querySelector('#api-method');
+const apiCrossDomainInput: HTMLInputElement = document.querySelector(
+  '#api-cross-domain',
+);
 const useChunkInput: HTMLInputElement = document.querySelector('#use-chunks');
 const addChecksumInput: HTMLInputElement = document.querySelector(
   '#add-checksum',
@@ -31,6 +35,8 @@ export {
   uploadFilesButton,
   previewContainer,
   fileEndpointInput,
+  apiMethodInput,
+  apiCrossDomainInput,
   useChunkInput,
   addChecksumInput,
   chunkSizeSelector,

@@ -3,7 +3,7 @@ import * as Config from 'config';
 import {
   UploadInputConfig,
   UploadConfig,
-  UploadApiEndpointConfig,
+  UploadApiConfig,
   UploadAdditionalFormData,
 } from './types/config.type';
 import { serialize } from './utils/functions';
@@ -20,8 +20,9 @@ export class AppController {
     let uploadInputConfig: UploadInputConfig = {
       accept: '*/*',
     };
-    let uploadApiEndpointConfig: UploadApiEndpointConfig = {
+    let uploadApiConfig: UploadApiConfig = {
       fileEndpoint: '/api/upload',
+      method: 'POST',
     };
     let additionalFormData = '';
     let uploadAdditionalFormData: UploadAdditionalFormData;
@@ -29,7 +30,7 @@ export class AppController {
     try {
       uploadConfig = Config.get<UploadConfig>('upload');
       uploadInputConfig = uploadConfig.input;
-      uploadApiEndpointConfig = uploadConfig.api;
+      uploadApiConfig = uploadConfig.api;
       uploadAdditionalFormData = uploadConfig.additionalFormData;
       if (
         typeof uploadAdditionalFormData?.fieldName !== 'undefined' &&
@@ -42,7 +43,13 @@ export class AppController {
       accept: Array.isArray(uploadInputConfig.accept)
         ? uploadInputConfig.accept.join(',')
         : '*/*',
-      fileEndpoint: uploadApiEndpointConfig.fileEndpoint,
+      fileEndpoint: uploadApiConfig.fileEndpoint,
+      method:
+        ['POST', 'PUT'].includes(uploadApiConfig.method?.toUpperCase()) &&
+        uploadApiConfig.fileEndpoint !== '/api/upload'
+          ? uploadApiConfig.method.toUpperCase()
+          : 'POST',
+      crossDomain: uploadApiConfig.fileEndpoint !== '/api/upload',
       additionalFormData,
     });
   }

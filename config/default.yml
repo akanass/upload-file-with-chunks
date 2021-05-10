@@ -41,6 +41,7 @@ assets:
 # Configuration for API endpoint
 #
 # - fileEndpoint is the endpoint to upload file(s)
+# - method The HTTP Method to use for the request. Only `POST` and `PUT` are allowed. Change it only if your own API wants a PUT instead of a POST
 #
 # Configuration for additional FormData
 #
@@ -49,15 +50,17 @@ assets:
 #   - fieldName is the key of the custom data inside the FormData
 #   - data is an object or a string representing the value of this custom data.
 #
-#  This custom data will be automatically serialized before inserted inside the FormData like formData.append(fieldName,data)
+#  This custom data will be automatically serialized before inserted inside the FormData with formData.append(fieldName,JSON.stringify(data))
 ##
 upload:
   input:
     accept:
       - application/pdf
       - image/*
+#      - video/*
   api:
     fileEndpoint: /api/upload
+    method: POST
 #  additionalFormData:
 #    fieldName: myAdditionalFormData
 #    data:
