@@ -46,9 +46,9 @@ $> docker compose up -d
 
 ## Configuration
 
-You can change the configuration in [default config file](https://github.com/akanass/upload-file-with-chunks/blob/master/config/default.yml#L54).
+You can change the configuration in [default config file](https://github.com/akanass/upload-file-with-chunks/blob/master/config/default.yml#L55).
 
-If for example you want to use your **own API** to receive the files you need to change the `upload.api.fileEndpoint` value to `"http://mon-api.com"` and `upload.api.crossDomain` value to `true`.
+If for example you want to use your **own API** to receive the files you need to change the `upload.api.fileEndpoint` value to `"http://mon-api.com"`.
 
 Each time you change a configuration data, you will have to restart the application for the changes to be taken into account.
 
