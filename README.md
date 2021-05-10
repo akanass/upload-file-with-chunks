@@ -9,15 +9,15 @@ It is an implementation of the ["@akanass/rx-file-upload"](https://github.com/ak
 ## Installation
 
 ```bash
-$ cd path/to/workspace
-$ git clone https://github.com/akanass/upload-file-with-chunks.git | git@github.com:akanass/upload-file-with-chunks.git
+$> cd path/to/workspace
+$> git clone https://github.com/akanass/upload-file-with-chunks.git | git@github.com:akanass/upload-file-with-chunks.git
 ```
 
 ### Local
 
 ```bash
 # install dependencies
-$ yarn install | npm install
+$> yarn install | npm install
 ```
 
 ### Docker
@@ -32,23 +32,23 @@ Once launched, the application will run on port **3000**.
 
 ```bash
 # build
-$ {yarn|npm} run build
+$> {yarn|npm} run build
 
 # production mode
-$ {yarn|npm} run start:prod
+$> {yarn|npm} run start:prod
 ```
 
 ### Docker
 
 ```bash
-$ docker compose up -d
+$> docker compose up -d
 ```
 
 ## Configuration
 
 You can change the configuration in [default config file](https://github.com/akanass/upload-file-with-chunks/blob/master/config/default.yml#L54).
 
-If for example you want to use your **own API** to receive the files you need to change the `upload.api.fileEndpoint` value to `"http://mon-api.com"`.
+If for example you want to use your **own API** to receive the files you need to change the `upload.api.fileEndpoint` value to `"http://mon-api.com"` and `upload.api.crossDomain` value to `true`.
 
 Each time you change a configuration data, you will have to restart the application for the changes to be taken into account.
 
@@ -103,6 +103,8 @@ And of course, multiple file uploads are taken into account by the library:
 
 If you want to see how the **client** implementation is going you can go [here](https://github.com/akanass/upload-file-with-chunks/blob/master/src_client/ts/upload.ts) and for the **server** implementation [here](https://github.com/akanass/upload-file-with-chunks/blob/master/src/api/api.controller.ts).
 
+If you want to see what is exactly sent by the library to the server, you can go [here](https://github.com/akanass/rx-file-upload#data-sent-in-the-formdata).
+
 ## License
 
-This project is [MIT licensed](LICENSE).
+This project is [MIT licensed](LICENSE.md).
