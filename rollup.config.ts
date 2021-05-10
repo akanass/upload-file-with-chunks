@@ -26,7 +26,7 @@ const config: RollupOptions[] = [
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       typescript({ tsconfig: './tsconfig.browser.json' }),
-      nodeResolve({ mainFields: ['es2015', 'module', 'main'] }),
+      nodeResolve({ mainFields: ['main:esnext', 'es2015', 'module', 'main'] }),
       terser(),
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
