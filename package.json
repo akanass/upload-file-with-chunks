@@ -32,6 +32,7 @@
     "rxjs": "^7.0.0"
   },
   "devDependencies": {
+    "@akanass/rx-file-upload": "^1.0.1",
     "@material/button": "^11.0.0",
     "@material/card": "^11.0.0",
     "@material/checkbox": "^11.0.0",
@@ -46,7 +47,6 @@
     "@types/node": "^15.0.2",
     "@typescript-eslint/eslint-plugin": "^4.22.1",
     "@typescript-eslint/parser": "^4.22.1",
-    "crypto-es": "^1.2.7",
     "deepmerge": "^4.2.2",
     "eslint": "^7.25.0",
     "eslint-config-prettier": "^8.3.0",
