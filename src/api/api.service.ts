@@ -1,12 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { from, Observable, of } from 'rxjs';
-import { filter, mergeMap, reduce } from 'rxjs/operators';
+import {
+  defaultIfEmpty,
+  filter,
+  map,
+  mergeMap,
+  reduce,
+  tap,
+} from 'rxjs/operators';
 
 import { pipeline } from 'stream/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { createWriteStream } from 'fs';
 
-import { FileDiskStorageWithChunks } from '../utils/file-disk-storage-with-chunks';
 import { deserialize } from '../utils/functions';
 
 @Injectable()
@@ -20,26 +27,45 @@ export class ApiService {
     of(req).pipe(
       mergeMap((r: any) => from(r.file())),
       mergeMap((data: any) =>
-        from(
-          pipeline(
-            data.file,
-            new FileDiskStorageWithChunks({
-              fields: data.fields,
-              filename: data.filename,
-            }),
-          ),
-        ).pipe(
-          mergeMap(() =>
-            from(Object.keys(data.fields)).pipe(
-              filter((key: string) => key !== 'file'),
-              reduce(
-                (acc: any, curr: any) => ({
-                  ...acc,
-                  [curr]: deserialize(data.fields[curr].value),
-                }),
-                {
-                  filePath: join(tmpdir(), data.filename),
-                },
+        of(data.fields.chunkData).pipe(
+          filter((chunkData: any) => typeof chunkData === 'object'),
+          map((chunkData: any) => deserialize(chunkData.value)),
+          tap((chunkData: any) => console.log(chunkData)),
+          map((chunkData: any) => ({
+            path: join(tmpdir(), data.filename),
+            options: {
+              flags: chunkData.sequence > 1 ? 'r+' : 'w',
+              encoding: 'binary',
+              start: chunkData.startByte,
+            },
+          })),
+          defaultIfEmpty({
+            path: join(tmpdir(), data.filename),
+            options: {
+              flags: 'w',
+              encoding: 'binary',
+            },
+          }),
+          mergeMap((config: any) =>
+            from(
+              pipeline(
+                data.file,
+                createWriteStream(config.path, config.options),
+              ),
+            ).pipe(
+              mergeMap(() =>
+                from(Object.keys(data.fields)).pipe(
+                  filter((key: string) => key !== 'file'),
+                  reduce(
+                    (acc: any, curr: any) => ({
+                      ...acc,
+                      [curr]: deserialize(data.fields[curr].value),
+                    }),
+                    {
+                      filePath: config.path,
+                    },
+                  ),
+                ),
               ),
             ),
           ),
