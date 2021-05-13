@@ -1,13 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { from, Observable, of } from 'rxjs';
-import {
-  defaultIfEmpty,
-  filter,
-  map,
-  mergeMap,
-  reduce,
-  tap,
-} from 'rxjs/operators';
+import { defaultIfEmpty, filter, map, mergeMap, reduce } from 'rxjs/operators';
 
 import { pipeline } from 'stream/promises';
 import { join } from 'path';
@@ -30,7 +23,6 @@ export class ApiService {
         of(data.fields.chunkData).pipe(
           filter((chunkData: any) => typeof chunkData === 'object'),
           map((chunkData: any) => deserialize(chunkData.value)),
-          tap((chunkData: any) => console.log(chunkData)),
           map((chunkData: any) => ({
             path: join(tmpdir(), data.filename),
             options: {
