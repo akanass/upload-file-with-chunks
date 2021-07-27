@@ -4,12 +4,12 @@ services:
     build:
       context: .
       target: PROD
-    image: akanass_upload_file_with_chunks_app:2.0.0
+    image: akanass_upload_file_with_chunks_app:2.1.0
     depends_on:
       - builder
     container_name: akanass_upload_file_with_chunks_app
     ports:
-      - 3000:3000
+      - "3000:3000"
     environment:
       NODE_ENV: production
     entrypoint: [ 'node', 'dist/main' ]
@@ -22,7 +22,7 @@ services:
     build:
       context: .
       target: BUILDER
-    image: akanass_upload_file_with_chunks_builder:2.0.0
+    image: akanass_upload_file_with_chunks_builder:2.1.0
     container_name: akanass_upload_file_with_chunks_builder
     networks:
       - akanass
