@@ -4,7 +4,7 @@ services:
     build:
       context: .
       target: PROD
-    image: akanass_upload_file_with_chunks_app:2.1.0
+    image: akanass_upload_file_with_chunks_app:2.2.0
     depends_on:
       - builder
     container_name: akanass_upload_file_with_chunks_app
@@ -22,7 +22,7 @@ services:
     build:
       context: .
       target: BUILDER
-    image: akanass_upload_file_with_chunks_builder:2.1.0
+    image: akanass_upload_file_with_chunks_builder:2.2.0
     container_name: akanass_upload_file_with_chunks_builder
     networks:
       - akanass
