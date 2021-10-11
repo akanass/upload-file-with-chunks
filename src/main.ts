@@ -9,7 +9,7 @@ import { Logger } from '@nestjs/common';
 import * as Config from 'config';
 import { join } from 'path';
 import * as Handlebars from 'handlebars';
-import * as HtmlMinifier from 'html-minifier-terser';
+import * as HtmlMinifier from 'html-minifier';
 import * as multipart from 'fastify-multipart';
 import * as metadata from './metadata.json';
 
